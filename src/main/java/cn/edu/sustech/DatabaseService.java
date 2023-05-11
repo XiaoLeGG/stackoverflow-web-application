@@ -2,10 +2,9 @@ package cn.edu.sustech;
 import com.alibaba.fastjson.JSONObject;
 import org.postgresql.util.PGInterval;
 
+
 import java.sql.*;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 public class DatabaseService {
@@ -16,6 +15,8 @@ public class DatabaseService {
     private String password; // 数据库密码
     private String database; // 数据库名
 
+    private StanfordCoreNLPService stanfordCoreNLPService;
+
     public DatabaseService(String host, int port, String user, String password, String database) {
         // 初始化数据库连接配置
         this.host = host;
@@ -24,6 +25,7 @@ public class DatabaseService {
         this.password = password;
         this.database = database;
         connection = null;
+        stanfordCoreNLPService = new StanfordCoreNLPService();
     }
     public boolean connect() {
         // 连接数据库
@@ -52,7 +54,7 @@ public class DatabaseService {
             e.printStackTrace();
         }
     }
-    public PreparedStatement prepareStatement(String sql) {
+    private PreparedStatement prepareStatement(String sql) {
         // 准备 SQL 语句
         try {
             return connection.prepareStatement(sql);
@@ -92,6 +94,7 @@ public class DatabaseService {
                 "    last_edit_date timestamp,\n" +
                 "    creation_date timestamp not null,\n" +
                 "    account_id int not null,\n" +
+                "    body text not null,\n" +
                 "    foreign key (account_id) references owner(account_id)\n" +
                 ");\n" +
                 "create table tag (\n" +
@@ -142,9 +145,9 @@ public class DatabaseService {
         statement.execute("SET session_replication_role = DEFAULT;");
         statement.close();
     }
-    public void insertQuestion(int question_id, Timestamp last_activity_date, Timestamp last_edit_date, Timestamp creation_date, int score, String link, int answer_count, int view_count, String content_license, String title, int account_id) throws SQLException {
+    public void insertQuestion(int question_id, Timestamp last_activity_date, Timestamp last_edit_date, Timestamp creation_date, int score, String link, int answer_count, int view_count, String content_license, String title, int account_id, String body) throws SQLException {
         // 在Question表中插入一条记录
-        PreparedStatement statement = this.prepareStatement("insert into question values (?,?,?,?,?,?,?,?,?,?,?)");
+        PreparedStatement statement = this.prepareStatement("insert into question values (?,?,?,?,?,?,?,?,?,?,?,?);");
         statement.setInt(1, question_id);
         statement.setInt(2, score);
         statement.setString(3, link);
@@ -156,6 +159,7 @@ public class DatabaseService {
         statement.setTimestamp(9, last_edit_date);
         statement.setTimestamp(10, creation_date);
         statement.setInt(11, account_id);
+        statement.setString(12, body);
         statement.executeUpdate();
     }
     public void insertTag(String tag_name) throws SQLException {
@@ -255,7 +259,8 @@ public class DatabaseService {
                 questionJSON.getInteger("view_count"),
                 questionJSON.getString("content_license"),
                 questionJSON.getString("title"),
-                owner.getAccount_id()
+                owner.getAccount_id(),
+                questionJSON.getString("body")
         );
         for (Object tag : questionJSON.getJSONArray("tags")) {
             insertTag((String) tag);
@@ -406,7 +411,7 @@ public class DatabaseService {
     }
     public double queryNonAcceptedAnswerPercent() throws SQLException {
         // 查询拥有非接受答案问题的比例
-        PreparedStatement statement = this.prepareStatement("select 1.0 * count(*) / (select count(*) from question) as non_accept_question_precent from\n" +
+        PreparedStatement statement = this.prepareStatement("select 1.0 * count(*) / (select count(*) from (select answer.score, answer.question_id from answer where is_accepted = true) as foo3) as non_accept_question_precent from\n" +
                 "(select answer.score, answer.question_id from answer where is_accepted = true) as foo2\n" +
                 "left join (select max(score) as max_score, question_id from answer where is_accepted = false group by question_id) as foo1\n" +
                 "on foo1.question_id = foo2.question_id\n" +
@@ -464,6 +469,56 @@ public class DatabaseService {
         }
         return result;
     }
+    public Map<String, Integer> queryTagGroupDistribution() throws SQLException {
+        // 查询标签的分组分布, 返回一个map, key为标签名, value为标签名为key的问题的分组总和
+        PreparedStatement statement = this.prepareStatement("select tag_names, count(*) as count from\n" +
+                "(select question_id, string_agg(tag_name, ',') as tag_names\n" +
+                "from connection_tag_and_question\n" +
+                "group by question_id) as foo\n" +
+                "group by tag_names;");
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        int index = 0;
+        while (resultSet.next()) {
+            result.put(resultSet.getString("tag_names"), resultSet.getInt("count"));
+            index++;
+        }
+        return result;
+    }
+    public Map<String, Integer> queryTagGroupScoreDistribution() throws SQLException {
+        // 查询标签的分组分数分布, 返回一个map, key为标签名, value为标签名为key的问题的分组分数总和
+        PreparedStatement statement = this.prepareStatement("select tag_names, sum(score) from (select tag_names, score from (select question_id, string_agg(tag_name, ',') as tag_names\n" +
+                "from connection_tag_and_question\n" +
+                "group by question_id) as foo1\n" +
+                "left join question\n" +
+                "on foo1.question_id = question.question_id) as foo2\n" +
+                "group by tag_names;\n");
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        int index = 0;
+        while (resultSet.next()) {
+            result.put(resultSet.getString("tag_names"), resultSet.getInt("sum"));
+            index++;
+        }
+        return result;
+    }
+    public Map<String, Integer> queryTagGroupViewDistribution() throws SQLException {
+        // 查询标签的分组浏览量分布, 返回一个map, key为标签名, value为标签名为key的问题的分组浏览量总和
+        PreparedStatement statement = this.prepareStatement("select tag_names, sum(view_count) from (select tag_names, view_count from (select question_id, string_agg(tag_name, ',') as tag_names\n" +
+                "from connection_tag_and_question\n" +
+                "group by question_id) as foo1\n" +
+                "left join question\n" +
+                "on foo1.question_id = question.question_id) as foo2\n" +
+                "group by tag_names;\n");
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        int index = 0;
+        while (resultSet.next()) {
+            result.put(resultSet.getString("tag_names"), resultSet.getInt("sum"));
+            index++;
+        }
+        return result;
+    }
     public int queryAccountAskTotal() throws SQLException {
         // 查询提问的不同用户的个数
         PreparedStatement statement = this.prepareStatement("select count(distinct account_id) as cnt from question;");
@@ -485,56 +540,137 @@ public class DatabaseService {
         resultSet.next();
         return resultSet.getInt("cnt");
     }
-    public List<Integer> queryActivateAccountID(double question, double answer, double comment) throws SQLException {
-        // 将所有用户按照提问数, 回答数, 评论数的权重进行排序, 排序后的用户id活跃列表
-        PreparedStatement statement = this.prepareStatement("select foo3.account_id, foo3.question_cnt, foo3.answer_cnt, foo4.comment_cnt from (select foo1.account_id, foo1.question_cnt, foo2.answer_cnt\n" +
-                "from (select count(*) as question_cnt, account_id from question\n" +
-                "group by account_id) as foo1\n" +
-                "inner join (select count(*) as answer_cnt, account_id from answer\n" +
-                "group by account_id) as foo2\n" +
-                "on foo1.account_id = foo2.account_id) as foo3\n" +
-                "inner join (select count(*) as comment_cnt, account_id from comment\n" +
-                "group by account_id) as foo4\n" +
-                "on foo4.account_id = foo3.account_id\n" +
-                "where foo3.account_id <> -1\n" +
-                "order by " + question + " * foo3.question_cnt + " + answer + " * foo3.answer_cnt + " + comment + " * foo4.comment_cnt desc;");
+    public Map<String, Integer> queryAccountQuestionNum() throws SQLException {
+        // 查询不同用户的提问数, 返回一个map, key为用户id, value为该用户的提问数
+        PreparedStatement statement = this.prepareStatement("select account_id, count(*) as count from question \n" +
+                "where account_id<>-1\n" +
+                "group by account_id;");
         ResultSet resultSet = statement.executeQuery();
-        List<Integer> result = new ArrayList<>();
+        Map<String, Integer> result = new HashMap<>();
         int index = 0;
         while (resultSet.next()) {
-            result.add(resultSet.getInt("account_id"));
+            result.put(resultSet.getString("account_id"), resultSet.getInt("count"));
             index++;
         }
         return result;
     }
-    public int queryQuestionAppearTimes(String keyword) throws SQLException {
-        // 查询问题中关键词出现的次数
-        PreparedStatement statement = this.prepareStatement("select count(*) as question_occurrences from (\n" +
-                "select question_id, regexp_matches(title, '" + keyword + "', 'gi') as matches from question\n" +
-                ") as foo\n" +
-                "where matches[1] is not null;");
+    public Map<String, Integer> queryAccountAnswerNum() throws SQLException {
+        PreparedStatement statement = this.prepareStatement("select account_id, count(*) as count from answer \n" +
+                "where account_id<>-1\n" +
+                "group by account_id;");
         ResultSet resultSet = statement.executeQuery();
-        resultSet.next();
-        return resultSet.getInt("question_occurrences");
+        Map<String, Integer> result = new HashMap<>();
+        int index = 0;
+        while (resultSet.next()) {
+            result.put(resultSet.getString("account_id"), resultSet.getInt("count"));
+            index++;
+        }
+        return result;
     }
-    public int queryAnswerAppearTimes(String keyword) throws SQLException {
-        // 查询回答中关键词出现的次数
-        PreparedStatement statement = this.prepareStatement("select count(*) as answer_occurrences from (\n" +
-                "select answer_id, regexp_matches(body, '" + keyword + "', 'gi') as matches from answer\n" +
-                ") as foo\n" +
-                "where matches[1] is not null;");
+    public Map<String, Integer> queryAccountCommentNum() throws SQLException {
+        // 查询不同用户的评论数, 返回一个map, key为用户id, value为该用户的评论数
+        PreparedStatement statement = this.prepareStatement("select account_id, count(*) as count from comment \n" +
+                "where account_id<>-1\n" +
+                "group by account_id;");
         ResultSet resultSet = statement.executeQuery();
-        resultSet.next();
-        return resultSet.getInt("answer_occurrences");
+        Map<String, Integer> result = new HashMap<>();
+        int index = 0;
+        while (resultSet.next()) {
+            result.put(resultSet.getString("account_id"), resultSet.getInt("count"));
+            index++;
+        }
+        return result;
     }
-    public int queryCommentAppearTimes(String keyword) throws SQLException {
-        // 查询评论中关键词出现的次数
-        PreparedStatement statement = this.prepareStatement("select count(*) as comment_occurrences from (\n" +
-                "select comment_id, regexp_matches(body, '" + keyword + "', 'gi') as matches from comment\n" +
-                ") as foo\n" +
-                "where matches[1] is not null;");
+
+
+    public Map<String, Integer> queryJavaAPIAppearanceInQuestion() throws SQLException {
+        // 查询问题中出现的java api的次数, 返回一个map, key为java api的名字, value为该api出现的次数
+        PreparedStatement statement = this.prepareStatement("select count(*) from question;");
         ResultSet resultSet = statement.executeQuery();
         resultSet.next();
-        return resultSet.getInt("comment_occurrences");
+        int nowCnt = 0, len = resultSet.getInt(1);
+        statement = this.prepareStatement("select title, body from question;");
+        resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        while (resultSet.next()) {
+            nowCnt ++;
+            if (nowCnt % (len / 10) == 0) {
+                String redColorCode = "\u001B[31m"; String resetColorCode = "\u001B[0m";
+                System.out.println("已完成" + redColorCode + (nowCnt * 100 / len) + "%" + resetColorCode);
+            }
+            String body = resultSet.getString("title");
+            Map<String, Integer> temp = stanfordCoreNLPService.getAllJavaAPI(body);
+            for (String key : temp.keySet()) {
+                if (result.containsKey(key)) {
+                    result.put(key, result.get(key) + temp.get(key));
+                } else {
+                    result.put(key, temp.get(key));
+                }
+            }
+            body = resultSet.getString("body");
+            temp = stanfordCoreNLPService.getAllJavaAPI(body);
+            for (String key : temp.keySet()) {
+                if (result.containsKey(key)) {
+                    result.put(key, result.get(key) + temp.get(key));
+                } else {
+                    result.put(key, temp.get(key));
+                }
+            }
+        }
+        return result;
+    }
+    public Map<String, Integer> queryJavaAPIAppearanceInAnswer() throws SQLException {
+        // 查询回答中出现的java api的次数, 返回一个map, key为java api的名字, value为该api出现的次数
+        PreparedStatement statement = this.prepareStatement("select count(*) from answer;");
+        ResultSet resultSet = statement.executeQuery();
+        resultSet.next();
+        int nowCnt = 0, len = resultSet.getInt(1);
+        statement = this.prepareStatement("select body from answer;");
+        resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        while (resultSet.next()) {
+            nowCnt ++;
+            if (nowCnt % (len / 15) == 0) {
+                String redColorCode = "\u001B[31m"; String resetColorCode = "\u001B[0m";
+                System.out.println("已完成" + redColorCode + (nowCnt * 100 / len) + "%" + resetColorCode);
+            }
+            String body = resultSet.getString("body");
+            Map<String, Integer> temp = stanfordCoreNLPService.getAllJavaAPI(body);
+            for (String key : temp.keySet()) {
+                if (result.containsKey(key)) {
+                    result.put(key, result.get(key) + temp.get(key));
+                } else {
+                    result.put(key, temp.get(key));
+                }
+            }
+        }
+        return result;
+    }
+    public Map<String, Integer> queryJavaAPIAppearanceInComment() throws SQLException {
+        // 查询评论中出现的java api的次数, 返回一个map, key为java api的名字, value为该api出现的次数
+        PreparedStatement statement = this.prepareStatement("select count(*) from comment;");
+        ResultSet resultSet = statement.executeQuery();
+        resultSet.next();
+        int nowCnt = 0, len = resultSet.getInt(1);
+        statement = this.prepareStatement("select body from comment;");
+        resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        while (resultSet.next()) {
+            nowCnt ++;
+            if (nowCnt % (len / 5) == 0) {
+                String redColorCode = "\u001B[31m"; String resetColorCode = "\u001B[0m";
+                System.out.println("已完成" + redColorCode + (nowCnt * 100 / len) + "%" + resetColorCode);
+            }
+            String body = resultSet.getString("body");
+            Map<String, Integer> temp = stanfordCoreNLPService.getAllJavaAPI(body);
+            for (String key : temp.keySet()) {
+                if (result.containsKey(key)) {
+                    result.put(key, result.get(key) + temp.get(key));
+                } else {
+                    result.put(key, temp.get(key));
+                }
+            }
+        }
+        return result;
     }
 }
