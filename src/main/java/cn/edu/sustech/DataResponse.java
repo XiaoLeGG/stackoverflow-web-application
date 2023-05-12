@@ -1,5 +1,7 @@
 package cn.edu.sustech;
 import org.postgresql.util.PGInterval;
+
+import javax.persistence.criteria.CriteriaBuilder;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;
@@ -31,7 +33,8 @@ public class DataResponse {
     private Map<String, Integer> tagGroupScoreDistribution; // 标签组分数分布
     private Map<String, Integer> tagGroupViewDistribution; // 标签组浏览量分布
 
-
+    private Map<String, Integer> questionAnswerUserNumDistribution;
+    private Map<String, Integer> questionCommentUserNumDistribution;
 
     private int accountAskTotal; // 提问总数
     private int accountAnswerTotal; // 回答总数
@@ -216,22 +219,40 @@ public class DataResponse {
         }
         return accountIDAppearTimes;
     }
+    public Map<String, Integer> getQuestionAnswerUserNumDistribution() {
+        // 返回<问题编号,回答该问题的用户数>
+        return questionAnswerUserNumDistribution;
+    }
+    public Map<String, Integer> getQuestionCommentUserNumDistribution() {
+        // 返回<问题编号,评论该问题的用户数>
+        return questionCommentUserNumDistribution;
+    }
+    public Map<String, Integer> getQuestionDiscussUserNumDistribution() {
+        // 返回<问题编号,讨论该问题的用户数>
+        Map<String, Integer> questionDiscussUserNumDistribution = new HashMap<>();
+        for (String key : questionAnswerUserNumDistribution.keySet()) {
+            questionDiscussUserNumDistribution.put(key, questionAnswerUserNumDistribution.get(key) + questionCommentUserNumDistribution.get(key) + 1);
+        }
+        return questionDiscussUserNumDistribution;
+    }
     public Timestamp getLastUpdate() {
         return lastUpdate;
     } // 获取最新更新时间
-    public DataResponse(String host, int port, String user, String password, String database, int pageSize, int pageStep) throws IOException, SQLException {
+    public DataResponse(String host, int port, String user, String password, String database, int pageSize, int pageStep, boolean isCollectData) throws IOException, SQLException {
         // host 数据库地址, port 数据库端口, user 数据库用户名, password 数据库密码, database 数据库名, pageSize 每页大小, pageStep 每次查询的页数
         databaseService = new DatabaseService(host, port, user, password, database);
         dataCollector = new DataCollector(databaseService, pageSize, pageStep);
-        refresh();
+        refresh(isCollectData);
     }
-    public void refresh() throws SQLException, IOException {
+    public void refresh(boolean isCollectData) throws SQLException, IOException {
         // 重新抓取，并更新数据
         databaseService.connect(); // 连接数据库
-        databaseService.createTable(); // 创建表
-        databaseService.disableForeignKeyCheck(); // 关闭外键约束
-        dataCollector.collectData(); // 收集数据并存储到数据库中
-        databaseService.enableForeignKeyCheck(); // 开启外键约束
+        if (isCollectData) {
+            databaseService.createTable(); // 创建表
+            databaseService.disableForeignKeyCheck(); // 关闭外键约束
+            dataCollector.collectData(); // 收集数据并存储到数据库中
+            databaseService.enableForeignKeyCheck(); // 开启外键约束
+        }
         noAnswerQuestionPercent = databaseService.queryNoAnswerQuestionPercent(); // 查询无回答问题比例
         AnswerNumAvg = databaseService.queryAnswerNumAvg(); // 查询平均回答数
         AnswerNumMax = databaseService.queryAnswerNumMax(); // 查询最大回答数
@@ -251,6 +272,8 @@ public class DataResponse {
         accountAnswerTimes = databaseService.queryAccountAnswerNum(); // 查询用户回答次数
         accountQuestionTimes = databaseService.queryAccountQuestionNum(); // 查询用户提问次数
         accountCommentTimes = databaseService.queryAccountCommentNum(); // 查询用户评论次数
+        questionAnswerUserNumDistribution = databaseService.queryQuestionAnswerUserNumDistribution(); // 查询问题回答用户数分布
+        questionCommentUserNumDistribution = databaseService.queryQuestionCommentUserNumDistribution(); // 查询问题评论用户数分布
         String redColorCode = "\u001B[31m"; String resetColorCode = "\u001B[0m";
         System.out.println(redColorCode + "正在查询javaAPI在Question中出现次数，请稍等..." + resetColorCode);
         javaAPIAppearanceInQuestion = databaseService.queryJavaAPIAppearanceInQuestion(); // 查询javaAPI在问题中出现次数

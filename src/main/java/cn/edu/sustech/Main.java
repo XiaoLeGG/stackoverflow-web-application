@@ -8,7 +8,7 @@ public class Main {
         DataResponse dataResponse = new DataResponse(
                 "localhost", 5432, "postgres",
                 "ljcfyh_123@99", "postgres",
-                100, 1000
+                100, 1000, false
         );
         System.out.println("最新更新时间为：" + dataResponse.getLastUpdate());
         System.out.println("---Number of Answers---");
@@ -34,7 +34,10 @@ public class Main {
         System.out.println("参与 Thread 讨论的用户数量的分布（提问）：" + dataResponse.getAccountQuestionTimes());
         System.out.println("参与 Thread 讨论的用户数量的分布（回答）：" + dataResponse.getAccountAnswerTimes());
         System.out.println("参与 Thread 讨论的用户数量的分布（评论）：" + dataResponse.getAccountCommentTimes());
-        System.out.println("参与 Thread 讨论的用户数量的分布（提问：回答：评论 = 1：1：1）：" + dataResponse.getAccountActivity(1, 1, 1));
+        System.out.println("参与每个 Thread 讨论的用户数量的分布（1 + 提问不同用户数 + 评论不同用户数）：" + dataResponse.getQuestionDiscussUserNumDistribution());
+        System.out.println("参与每个 Thread 讨论的回答用户数量的分布：" + dataResponse.getQuestionAnswerUserNumDistribution());
+        System.out.println("参与每个 Thread 讨论的评论用户数量的分布：" + dataResponse.getQuestionCommentUserNumDistribution());
+        System.out.println("参与 Thread 讨论的用户数量的分布（提问：回答：评论 = 1：1：1）获取活跃度：" + dataResponse.getAccountActivity(1, 1, 1));
         System.out.println("哪些用户参与 java thread 讨论最活跃：" + dataResponse.getActivateAccountID(1, 1, 1));
 
         System.out.println("---Frequently discussed Java APIs ---");

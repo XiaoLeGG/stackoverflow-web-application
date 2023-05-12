@@ -673,4 +673,31 @@ public class DatabaseService {
         }
         return result;
     }
+
+    public Map<String, Integer> queryQuestionAnswerUserNumDistribution() throws SQLException {
+        PreparedStatement statement = this.prepareStatement("select question_id, count(distinct account_id) as cnt from (select question.question_id, answer.account_id from question\n" +
+                "left join answer\n" +
+                "on answer.question_id = question.question_id) as foo\n" +
+                "group by question_id;");
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        while (resultSet.next()) {
+            result.put(resultSet.getString("question_id"), resultSet.getInt("cnt"));
+        }
+        return result;
+    }
+    public Map<String, Integer> queryQuestionCommentUserNumDistribution() throws SQLException {
+        PreparedStatement statement = this.prepareStatement("select question_id, count(distinct comment_id) as cnt from (select question_id, comment_id from (select question.question_id, answer.answer_id from question\n" +
+                "left join answer\n" +
+                "on answer.question_id = question.question_id) as foo\n" +
+                "left join comment\n" +
+                "on (foo.answer_id = comment.post_id)) as foo2\n" +
+                "group by question_id;\n");
+        ResultSet resultSet = statement.executeQuery();
+        Map<String, Integer> result = new HashMap<>();
+        while (resultSet.next()) {
+            result.put(resultSet.getString("question_id"), resultSet.getInt("cnt"));
+        }
+        return result;
+    }
 }
