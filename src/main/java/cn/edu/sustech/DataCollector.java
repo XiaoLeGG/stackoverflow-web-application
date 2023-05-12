@@ -1,12 +1,9 @@
 package cn.edu.sustech;
 
 import java.io.*;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
@@ -34,16 +31,6 @@ public class DataCollector {
     public void setPageStep(int pageStep) {
         this.pageStep = pageStep;
     } // 设置每次获取所隔的页数
-    public DataCollector (DatabaseService databaseService) throws IOException {
-        // 默认每页大小为100，每次获取所隔的页数为1000
-        this.databaseService = databaseService;
-        questionList = new ArrayList<>();
-        answerList = new ArrayList<>();
-        commentList = new ArrayList<>();
-        pageSize = 100;
-        pageStep = 1000;
-        refresh();
-    }
     public DataCollector (DatabaseService databaseService, int pageSize, int pageStep) throws IOException {
         // 自定义每页大小和每次获取所隔的页数
         this.databaseService = databaseService;
@@ -107,9 +94,9 @@ public class DataCollector {
             // 按照activity排序，获取每隔pageStep页的pageSize个问题
             String redColorCode = "\u001B[31m";
             String resetColorCode = "\u001B[0m";
-            System.out.println(redColorCode + "TASK1:" + (int)(100 * ((double)i / pageTotal)) + "%" + resetColorCode);
+            System.out.println(redColorCode + "获取所有提问数据ing：" + (int)(100 * ((double)i / pageTotal)) + "%" + resetColorCode);
             String url = "https://api.stackexchange.com/2.3/questions";
-            String params = String.format("page=%d&pagesize=%d&order=desc&sort=activity&tagged=java&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", i, pageSize);
+            String params = String.format("page=%d&pagesize=%d&order=desc&sort=activity&tagged=java&filter=withbody&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", i, pageSize);
             String apiURL = url + "?" + params;
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet(apiURL);
@@ -118,6 +105,7 @@ public class DataCollector {
             if (entity != null) {
                 String responseBody = EntityUtils.toString(entity);
                 JSONObject data = JSON.parseObject(responseBody);
+                if (data.getJSONArray("items") == null) continue;
                 for (int j = 0; j < pageSize; j++) {
                     JSONObject item = data.getJSONArray("items").getJSONObject(j);
                     questionList.add(item);
@@ -133,7 +121,7 @@ public class DataCollector {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "TASK2:" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
+                System.out.println(redColorCode + "获取所有回答数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
                 String ids = "";
                 for (int j = 0; j < nowQuestionIdList.size(); j++) {
                     ids += nowQuestionIdList.get(j);
@@ -185,7 +173,7 @@ public class DataCollector {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "TASK3:" + (int)(100 * ((double)i / AnswerIDList.size())) + "%" + resetColorCode);
+                System.out.println(redColorCode + "获取所有评论数据ing：" + (int)(100 * ((double)i / AnswerIDList.size())) + "%" + resetColorCode);
                 String ids = "";
                 for (int j = 0; j < nowAnswerIdList.size(); j++) {
                     ids += nowAnswerIdList.get(j);
@@ -225,22 +213,29 @@ public class DataCollector {
             }
             nowAnswerIdList.clear();
         }
-        System.out.println("questionList.size() = " + questionList.size());
-        System.out.println("answerList.size() = " + answerList.size());
-        System.out.println("commentList.size() = " + commentList.size());
+        System.out.println("爬取Question总数：" + questionList.size());
+        System.out.println("爬取Answer总数：" + answerList.size());
+        System.out.println("爬取Comment总数：" + commentList.size());
         // 将数据插入数据库
+        String redColorCode = "\u001B[31m";
+        String resetColorCode = "\u001B[0m";
+        System.out.println(redColorCode + "数据插入数据库" + resetColorCode);
         for (int i = 0; i < questionList.size(); i++) {
             JSONObject questionItem = questionList.get(i);
             databaseService.insertQuestionRecord(questionItem);
         }
+        System.out.println(redColorCode + "Question已经插入数据库!" + resetColorCode);
         for (int i = 0; i < answerList.size(); i++) {
             JSONObject answerItem = answerList.get(i);
             databaseService.insertAnswerRecord(answerItem);
         }
+        System.out.println(redColorCode + "Answer已经插入数据库!" + resetColorCode);
         for (int i = 0; i < commentList.size(); i++) {
             JSONObject commentItem = commentList.get(i);
             databaseService.insertCommentRecord(commentItem);
         }
+        System.out.println(redColorCode + "Comment已经插入数据库!" + resetColorCode);
+        System.out.println(redColorCode + "数据插入数据库完成！" + resetColorCode);
     }
     public List<JSONObject> getComments(String ids) {
         // 获取每个回答的评论，ids为answer_id的字符串，以分号分隔
