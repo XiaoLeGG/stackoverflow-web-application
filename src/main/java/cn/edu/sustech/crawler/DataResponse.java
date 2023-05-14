@@ -1,7 +1,8 @@
-package cn.edu.sustech;
+package cn.edu.sustech.crawler;
+import cn.edu.sustech.crawler.DataCollector;
+import cn.edu.sustech.crawler.DatabaseService;
 import org.postgresql.util.PGInterval;
 
-import javax.persistence.criteria.CriteriaBuilder;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.sql.Timestamp;

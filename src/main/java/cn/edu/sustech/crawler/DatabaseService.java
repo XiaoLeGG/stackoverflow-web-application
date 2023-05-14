@@ -1,4 +1,4 @@
-package cn.edu.sustech;
+package cn.edu.sustech.crawler;
 import com.alibaba.fastjson.JSONObject;
 import org.postgresql.util.PGInterval;
 
@@ -133,18 +133,21 @@ public class DatabaseService {
                 "    foreign key (post_id) references  answer(answer_id)\n" +
                 ")");
     }
+    
     public void disableForeignKeyCheck() throws SQLException {
         // 关闭外键约束
         Statement statement = connection.createStatement();
         statement.execute("SET session_replication_role = replica;");
         statement.close();
     }
+    
     public void enableForeignKeyCheck() throws SQLException {
         // 开启外键约束
         Statement statement = connection.createStatement();
         statement.execute("SET session_replication_role = DEFAULT;");
         statement.close();
     }
+    
     public void insertQuestion(int question_id, Timestamp last_activity_date, Timestamp last_edit_date, Timestamp creation_date, int score, String link, int answer_count, int view_count, String content_license, String title, int account_id, String body) throws SQLException {
         // 在Question表中插入一条记录
         PreparedStatement statement = this.prepareStatement("insert into question values (?,?,?,?,?,?,?,?,?,?,?,?);");
@@ -162,6 +165,7 @@ public class DatabaseService {
         statement.setString(12, body);
         statement.executeUpdate();
     }
+    
     public void insertTag(String tag_name) throws SQLException {
         // 在Tag表中插入一条记录
         PreparedStatement statement = this.prepareStatement("select count(*) from tag where tag_name = ?");
@@ -175,6 +179,7 @@ public class DatabaseService {
         statement.setString(1, tag_name);
         statement.executeUpdate();
     }
+    
     public void insertAnswer(int answer_id, Timestamp last_activity_date, Timestamp last_edit_date, Timestamp creation_date, int score, boolean is_accepted, String content_license, int question_id, String body, int account_id) throws SQLException {
         // 在Answer表中插入一条记录
         PreparedStatement statement = this.prepareStatement("insert into answer values (?,?,?,?,?,?,?,?,?,?)");
@@ -190,6 +195,7 @@ public class DatabaseService {
         statement.setInt(10, account_id);
         statement.executeUpdate();
     }
+    
     public void insertOwner(int account_id, int user_id, String profile_image, String link, String user_type, String display_name, int reputation) throws SQLException {
         // 在Owner表中插入一条记录
         PreparedStatement statement = this.prepareStatement("select count(*) from owner where account_id = ?");
@@ -209,6 +215,7 @@ public class DatabaseService {
         statement.setInt(7, reputation);
         statement.executeUpdate();
     }
+    
     public void insertComment(int comment_id, boolean edited, int post_id, String body, Timestamp creation_date, int score, String content_license, int account_id) throws SQLException {
         // 在Comment表中插入一条记录
         PreparedStatement statement = this.prepareStatement("insert into comment values (?,?,?,?,?,?,?,?)");
@@ -222,6 +229,7 @@ public class DatabaseService {
         statement.setInt(8, account_id);
         statement.execute();
     }
+    
     public void insertConnectionTagAndQuestion(String tag_name, int question_id) throws SQLException {
         // 在ConnectionTagAndQuestion表中插入一条记录（为了多对多关系额外创建的数据表，以符合第三范式）
         PreparedStatement statement = this.prepareStatement("insert into connection_tag_and_question values (?,?)");
@@ -229,6 +237,7 @@ public class DatabaseService {
         statement.setInt(2, question_id);
         statement.executeUpdate();
     }
+    
     private Timestamp convertDate(Integer date) {
         // 将Unix时间戳转换为Timestamp
         if (date == null) {
@@ -236,6 +245,7 @@ public class DatabaseService {
         }
         return new Timestamp(date * 1000L);
     }
+    
     public void insertQuestionRecord(JSONObject questionJSON) throws SQLException {
         // 将一个问题的JSON数据插入到数据库中
         JSONObject ownerJson = questionJSON.getJSONObject("owner");
@@ -259,7 +269,7 @@ public class DatabaseService {
                 questionJSON.getInteger("view_count"),
                 questionJSON.getString("content_license"),
                 questionJSON.getString("title"),
-                owner.getAccount_id(),
+                owner.getAccountId(),
                 questionJSON.getString("body")
         );
         for (Object tag : questionJSON.getJSONArray("tags")) {
@@ -269,12 +279,12 @@ public class DatabaseService {
             insertConnectionTagAndQuestion((String) tag, questionJSON.getInteger("question_id"));
         }
         insertOwner(
-            owner.getAccount_id(),
-            owner.getUser_id(),
-            owner.getProfile_image(),
+            owner.getAccountId(),
+            owner.getUserId(),
+            owner.getProfileImage(),
             owner.getLink(),
-            owner.getUser_type(),
-            owner.getDisplay_name(),
+            owner.getUserType(),
+            owner.getDisplayName(),
             owner.getReputation()
         );
     }
@@ -300,15 +310,15 @@ public class DatabaseService {
             answerJSON.getString("content_license"),
             answerJSON.getInteger("question_id"),
             answerJSON.getString("body"),
-            owner.getAccount_id()
+            owner.getAccountId()
         );
         insertOwner(
-            owner.getAccount_id(),
-            owner.getUser_id(),
-            owner.getProfile_image(),
+            owner.getAccountId(),
+            owner.getUserId(),
+            owner.getProfileImage(),
             owner.getLink(),
-            owner.getUser_type(),
-            owner.getDisplay_name(),
+            owner.getUserType(),
+            owner.getDisplayName(),
             owner.getReputation()
         );
     }
@@ -333,15 +343,15 @@ public class DatabaseService {
             convertDate(commentJSON.getInteger("creation_date")),
             commentJSON.getInteger("score"),
             commentJSON.getString("content_license"),
-            owner.getAccount_id()
+            owner.getAccountId()
         );
         insertOwner(
-            owner.getAccount_id(),
-            owner.getUser_id(),
-            owner.getProfile_image(),
+            owner.getAccountId(),
+            owner.getUserId(),
+            owner.getProfileImage(),
             owner.getLink(),
-            owner.getUser_type(),
-            owner.getDisplay_name(),
+            owner.getUserType(),
+            owner.getDisplayName(),
             owner.getReputation()
         );
     }
@@ -528,14 +538,14 @@ public class DatabaseService {
     }
     public int queryAccountAnswerTotal() throws SQLException {
         // 查询回答的不同用户的个数
-        PreparedStatement statement = this.prepareStatement("select count(account_id) as cnt from answer;");
+        PreparedStatement statement = this.prepareStatement("select count(distinct account_id) as cnt from answer;");
         ResultSet resultSet = statement.executeQuery();
         resultSet.next();
         return resultSet.getInt("cnt");
     }
     public int queryAccountCommentTotal() throws SQLException {
         // 查询评论的不同用户的个数
-        PreparedStatement statement = this.prepareStatement("select count(account_id) as cnt from comment;");
+        PreparedStatement statement = this.prepareStatement("select count(distinct account_id) as cnt from comment;");
         ResultSet resultSet = statement.executeQuery();
         resultSet.next();
         return resultSet.getInt("cnt");

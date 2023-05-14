@@ -1,4 +1,4 @@
-package cn.edu.sustech;
+package cn.edu.sustech.crawler;
 
 import edu.stanford.nlp.ling.CoreAnnotations;
 import edu.stanford.nlp.ling.CoreLabel;

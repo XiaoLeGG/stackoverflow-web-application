@@ -1,4 +1,4 @@
-package cn.edu.sustech;
+package cn.edu.sustech.crawler;
 
 import java.io.*;
 import java.sql.SQLException;
@@ -21,7 +21,7 @@ public class DataCollector {
     private List<JSONObject> questionList; // 获取问题JSON列表
     private List<JSONObject> answerList;  // 获取回答JSON列表
     private List<JSONObject> commentList; // 获取评论JSON列表
-    private int QuestionTotal; // 当前StackOverflow上的问题总数（用来衡量数据爬取的普适性）
+    private int totalQuestions; // 当前StackOverflow上的问题总数（用来衡量数据爬取的普适性）
     private int NoAnsQuestionTotal; // 当前StackOverflow上的无回答问题总数（计算比例，用来衡量数据爬取的普适性）
     private DatabaseService databaseService; // 数据库服务
 
@@ -53,7 +53,7 @@ public class DataCollector {
         if (entity != null) {
             String responseBody = EntityUtils.toString(entity);
             JSONObject data = JSON.parseObject(responseBody);
-            QuestionTotal = data.getInteger("total");
+            totalQuestions = data.getInteger("total");
         }
         response.close();
         httpClient.close();
@@ -72,9 +72,9 @@ public class DataCollector {
         response.close();
         httpClient.close();
     }
-    public int getQuestionTotal() throws IOException {
+    public int getTotalQuestions() throws IOException {
         // 获取stackOverflow上准确的问题总数
-        return QuestionTotal;
+        return totalQuestions;
     }
     public int getNoAnsQuestionTotal() throws IOException {
         // 获取stackOverflow上准确的无回答问题总数
@@ -83,13 +83,13 @@ public class DataCollector {
 
     public double getNoAnsPercent() throws IOException {
         // 获取stackOverflow上准确的无回答问题比例
-        QuestionTotal = getQuestionTotal();
+        totalQuestions = getTotalQuestions();
         NoAnsQuestionTotal = getNoAnsQuestionTotal();
-        return (double) NoAnsQuestionTotal / QuestionTotal;
+        return (double) NoAnsQuestionTotal / totalQuestions;
     }
     public void collectData() throws IOException, SQLException {
         // 数据爬取
-        int pageTotal = QuestionTotal / pageSize; // 设置总页数
+        int pageTotal = totalQuestions / pageSize; // 设置总页数
         for (int i = 1; i <= pageTotal; i += pageStep) {
             // 按照activity排序，获取每隔pageStep页的pageSize个问题
             String redColorCode = "\u001B[31m";
@@ -115,73 +115,73 @@ public class DataCollector {
             httpClient.close();
         }
         // 获取每个问题的回答
-        List<Integer> nowQuestionIdList = new ArrayList<>();
-        List<Integer> AnswerIDList = new ArrayList<>();
+        List<Integer> currentQuestionIdList = new ArrayList<>();
+        List<Integer> answerIdList = new ArrayList<>();
         for (int i = 0; i < questionList.size(); i++) {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
                 System.out.println(redColorCode + "获取所有回答数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
-                String ids = "";
-                for (int j = 0; j < nowQuestionIdList.size(); j++) {
-                    ids += nowQuestionIdList.get(j);
-                    if (j != nowQuestionIdList.size() - 1) {
-                        ids += ";";
+                StringBuilder ids = new StringBuilder();
+                for (int j = 0; j < currentQuestionIdList.size(); j++) {
+                    ids.append(currentQuestionIdList.get(j));
+                    if (j != currentQuestionIdList.size() - 1) {
+                        ids.append(";");
                     }
                 }
-                List<JSONObject> jsonObjectList = getAnswers(ids);
-                for (JSONObject jsonObject: jsonObjectList) {
+                List<JSONObject> jsonObjectList = getAnswers(ids.toString());
+                for (JSONObject jsonObject : jsonObjectList) {
                     JSONArray answers = jsonObject.getJSONArray("items");
                     for (int j = 0; j < answers.size(); j++) {
                         JSONObject item = answers.getJSONObject(j);
                         if (item != null) {
                             answerList.add(item);
-                            AnswerIDList.add(item.getInteger("answer_id"));
+                            answerIdList.add(item.getInteger("answer_id"));
                         }
                     }
                 }
-                nowQuestionIdList.clear();
+                currentQuestionIdList.clear();
             }
             JSONObject item = questionList.get(i);
             int questionId = item.getInteger("question_id");
-            nowQuestionIdList.add(questionId);
+            currentQuestionIdList.add(questionId);
         }
-        if (nowQuestionIdList.size() > 0) {
-            String ids = "";
-            for (int j = 0; j < nowQuestionIdList.size(); j++) {
-                ids += nowQuestionIdList.get(j);
-                if (j != nowQuestionIdList.size() - 1) {
-                    ids += ";";
+        if (currentQuestionIdList.size() > 0) {
+            StringBuilder ids = new StringBuilder();
+            for (int j = 0; j < currentQuestionIdList.size(); j++) {
+                ids.append(currentQuestionIdList.get(j));
+                if (j != currentQuestionIdList.size() - 1) {
+                    ids.append(";");
                 }
             }
-            List<JSONObject> jsonObjectList = getAnswers(ids);
+            List<JSONObject> jsonObjectList = getAnswers(ids.toString());
             for (JSONObject jsonObject: jsonObjectList) {
                 JSONArray answers = jsonObject.getJSONArray("items");
                 for (int j = 0; j < answers.size(); j++) {
                     JSONObject item = answers.getJSONObject(j);
                     if (item != null) {
                         answerList.add(item);
-                        AnswerIDList.add(item.getInteger("answer_id"));
+                        answerIdList.add(item.getInteger("answer_id"));
                     }
                 }
             }
-            nowQuestionIdList.clear();
+            currentQuestionIdList.clear();
         }
         // 获取每个回答的评论
-        List<Integer> nowAnswerIdList = new ArrayList<>();
-        for (int i = 0; i < AnswerIDList.size(); i++) {
+        List<Integer> currentAnswerIdList = new ArrayList<>();
+        for (int i = 0; i < answerIdList.size(); i++) {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "获取所有评论数据ing：" + (int)(100 * ((double)i / AnswerIDList.size())) + "%" + resetColorCode);
-                String ids = "";
-                for (int j = 0; j < nowAnswerIdList.size(); j++) {
-                    ids += nowAnswerIdList.get(j);
-                    if (j != nowAnswerIdList.size() - 1) {
-                        ids += ";";
+                System.out.println(redColorCode + "获取所有评论数据ing：" + (int)(100 * ((double)i / answerIdList.size())) + "%" + resetColorCode);
+                StringBuilder ids = new StringBuilder();
+                for (int j = 0; j < currentAnswerIdList.size(); j++) {
+                    ids.append(currentAnswerIdList.get(j));
+                    if (j != currentAnswerIdList.size() - 1) {
+                        ids.append(";");
                     }
                 }
-                List<JSONObject> jsonObjectList = getComments(ids);
+                List<JSONObject> jsonObjectList = getComments(ids.toString());
                 for (JSONObject jsonObject: jsonObjectList) {
                     JSONArray answers = jsonObject.getJSONArray("items");
                     for (int j = 0; j < answers.size(); j++) {
@@ -189,17 +189,17 @@ public class DataCollector {
                         if (item != null) commentList.add(item);
                     }
                 }
-                nowAnswerIdList.clear();
+                currentAnswerIdList.clear();
             }
             JSONObject item = answerList.get(i);
             int answerId = item.getInteger("answer_id");
-            nowAnswerIdList.add(answerId);
+            currentAnswerIdList.add(answerId);
         }
-        if (nowAnswerIdList.size() > 0) {
+        if (currentAnswerIdList.size() > 0) {
             String ids = "";
-            for (int j = 0; j < nowAnswerIdList.size(); j++) {
-                ids += nowAnswerIdList.get(j);
-                if (j != nowAnswerIdList.size() - 1) {
+            for (int j = 0; j < currentAnswerIdList.size(); j++) {
+                ids += currentAnswerIdList.get(j);
+                if (j != currentAnswerIdList.size() - 1) {
                     ids += ";";
                 }
             }
@@ -211,7 +211,7 @@ public class DataCollector {
                     if (item != null) commentList.add(item);
                 }
             }
-            nowAnswerIdList.clear();
+            currentAnswerIdList.clear();
         }
         System.out.println("爬取Question总数：" + questionList.size());
         System.out.println("爬取Answer总数：" + answerList.size());
@@ -255,7 +255,9 @@ public class DataCollector {
                     String responseBody = EntityUtils.toString(entity);
                     JSONObject data = JSON.parseObject(responseBody);
                     jsonObjectList.add(data);
-                    if (!data.getBoolean("has_more")) break; // 获取所有评论数据
+                    if (!data.getBoolean("has_more")) {
+                        break; // 获取所有评论数据
+                    }
                 }
                 response.close();
                 httpClient.close();

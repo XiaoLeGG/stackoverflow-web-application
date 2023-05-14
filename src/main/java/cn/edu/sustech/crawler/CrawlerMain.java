@@ -1,14 +1,14 @@
-package cn.edu.sustech;
+package cn.edu.sustech.crawler;
 
 import java.io.IOException;
 import java.sql.SQLException;
 
-public class Main {
+public class CrawlerMain {
     public static void main(String[] args) throws SQLException, IOException {
         DataResponse dataResponse = new DataResponse(
-                "localhost", 5432, "postgres",
-                "ljcfyh_123@99", "postgres",
-                100, 1000, false
+                "localhost", 5432, "test",
+                "123456", "sof",
+                100, 1000, true
         );
         System.out.println("最新更新时间为：" + dataResponse.getLastUpdate());
         System.out.println("---Number of Answers---");
