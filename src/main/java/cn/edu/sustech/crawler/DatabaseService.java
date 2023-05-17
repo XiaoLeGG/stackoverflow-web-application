@@ -67,9 +67,13 @@ public class DatabaseService {
     public void createTable() throws SQLException {
         // 创建数据库表
         Statement statement = this.connection.createStatement();
-        statement.executeUpdate("drop table if exists comment;\n" +
+        statement.executeUpdate("drop table if exists connection_tag_and_question;\n" +
+                "drop table if exists connection_answer_and_api;\n" +
+                "drop table if exists connection_comment_and_api;\n" +
+                "drop table if exists connection_question_and_api;\n" +
+                "drop table if exists comment;\n" +
                 "drop table if exists answer;\n" +
-                "drop table if exists connection_tag_and_question;\n" +
+                "drop table if exists api;\n" +
                 "drop table if exists tag;\n" +
                 "drop table if exists question;\n" +
                 "drop table if exists owner;\n" +
@@ -97,9 +101,6 @@ public class DatabaseService {
                 "    body text not null,\n" +
                 "    foreign key (account_id) references owner(account_id)\n" +
                 ");\n" +
-                "create table tag (\n" +
-                "    tag_name text primary key\n" +
-                ");\n" +
                 "create table answer(\n" +
                 "    answer_id int primary key,\n" +
                 "    last_activity_date timestamp not null,\n" +
@@ -114,12 +115,6 @@ public class DatabaseService {
                 "    foreign key (question_id) references question(question_id),\n" +
                 "    foreign key (account_id) references owner(account_id)\n" +
                 ");\n" +
-                "create table connection_tag_and_question (\n" +
-                "    tag_name text not null,\n" +
-                "    question_id int not null,\n" +
-                "    foreign key (tag_name) references tag (tag_name),\n" +
-                "    foreign key (question_id) references question(question_id)\n" +
-                ");\n" +
                 "create table comment (\n" +
                 "    comment_id int primary key,\n" +
                 "    edited bool not null,\n" +
@@ -131,7 +126,40 @@ public class DatabaseService {
                 "    account_id int not null,\n" +
                 "    foreign key (account_id) references owner(account_id),\n" +
                 "    foreign key (post_id) references  answer(answer_id)\n" +
-                ")");
+                ");\n" +
+                "create table tag (\n" +
+                "    tag_name text primary key\n" +
+                ");\n" +
+                "create table api(\n" +
+                "    api_name text primary key\n" +
+                ");\n" +
+                "create table connection_tag_and_question (\n" +
+                "    tag_name text not null,\n" +
+                "    question_id int not null,\n" +
+                "    foreign key (tag_name) references tag (tag_name),\n" +
+                "    foreign key (question_id) references question(question_id)\n" +
+                ");\n" +
+                "create table connection_question_and_api (\n" +
+                "    question_id int not null,\n" +
+                "    api_name text not null,\n" +
+                "    count int not null,\n" +
+                "    foreign key (question_id) references question(question_id),\n" +
+                "    foreign key (api_name) references api(api_name)\n" +
+                ");\n" +
+                "create table connection_answer_and_api(\n" +
+                "    answer_id int not null,\n" +
+                "    api_name text not null,\n" +
+                "    count int not null,\n" +
+                "    foreign key (answer_id) references answer(answer_id),\n" +
+                "    foreign key (api_name) references api(api_name)\n" +
+                ");\n" +
+                "create table connection_comment_and_api(\n" +
+                "    comment_id int not null,\n" +
+                "    api_name text not null,\n" +
+                "    count int not null,\n" +
+                "    foreign key (comment_id) references comment(comment_id),\n" +
+                "    foreign key (api_name) references api(api_name)\n" +
+                ");");
     }
     
     public void disableForeignKeyCheck() throws SQLException {
@@ -177,6 +205,19 @@ public class DatabaseService {
         }
         statement = this.prepareStatement("insert into tag values (?)");
         statement.setString(1, tag_name);
+        statement.executeUpdate();
+    }
+    public void insertApi(String api_name) throws SQLException {
+        // 在Api表中插入一条记录
+        PreparedStatement statement = this.prepareStatement("select count(*) from api where api_name = ?");
+        statement.setString(1, api_name);
+        ResultSet resultSet = statement.executeQuery();
+        resultSet.next();
+        if (resultSet.getInt(1) > 0) {
+            return;
+        }
+        statement = this.prepareStatement("insert into api values (?)");
+        statement.setString(1, api_name);
         statement.executeUpdate();
     }
     
@@ -237,6 +278,30 @@ public class DatabaseService {
         statement.setInt(2, question_id);
         statement.executeUpdate();
     }
+    public void insertConnectionQuestionAndApi(int question_id, String api_name, int count) throws SQLException {
+        // 在ConnectionApiAndQuestion表中插入一条记录（为了多对多关系额外创建的数据表，以符合第三范式）
+        PreparedStatement statement = this.prepareStatement("insert into connection_question_and_api values (?,?,?)");
+        statement.setInt(1, question_id);
+        statement.setString(2, api_name);
+        statement.setInt(3, count);
+        statement.executeUpdate();
+    }
+   public void insertConnectionAnswerAndApi(int answer_id, String api_name, int count) throws SQLException {
+        // 在ConnectionApiAndAnswer表中插入一条记录（为了多对多关系额外创建的数据表，以符合第三范式）
+        PreparedStatement statement = this.prepareStatement("insert into connection_answer_and_api values (?,?,?)");
+        statement.setInt(1, answer_id);
+        statement.setString(2, api_name);
+        statement.setInt(3, count);
+        statement.executeUpdate();
+    }
+    public void insertConnectionCommentAndApi(int comment_id, String api_name, int count) throws SQLException {
+        // 在ConnectionApiAndComment表中插入一条记录（为了多对多关系额外创建的数据表，以符合第三范式）
+        PreparedStatement statement = this.prepareStatement("insert into connection_comment_and_api values (?,?,?)");
+        statement.setInt(1, comment_id);
+        statement.setString(2, api_name);
+        statement.setInt(3, count);
+        statement.executeUpdate();
+    }
     
     private Timestamp convertDate(Integer date) {
         // 将Unix时间戳转换为Timestamp
@@ -245,7 +310,7 @@ public class DatabaseService {
         }
         return new Timestamp(date * 1000L);
     }
-    
+
     public void insertQuestionRecord(JSONObject questionJSON) throws SQLException {
         // 将一个问题的JSON数据插入到数据库中
         JSONObject ownerJson = questionJSON.getJSONObject("owner");
@@ -287,6 +352,11 @@ public class DatabaseService {
             owner.getDisplayName(),
             owner.getReputation()
         );
+        Map<String, Integer> apiCount = stanfordCoreNLPService.getAllJavaAPI(questionJSON.getString("body"));
+        for (Map.Entry<String, Integer> entry : apiCount.entrySet()) {
+            insertApi(entry.getKey());
+            insertConnectionQuestionAndApi(questionJSON.getInteger("question_id"), entry.getKey(), entry.getValue());
+        }
     }
     public void insertAnswerRecord(JSONObject answerJSON) throws SQLException {
         // 将一个回答的JSON数据插入到数据库中
@@ -321,6 +391,11 @@ public class DatabaseService {
             owner.getDisplayName(),
             owner.getReputation()
         );
+        Map<String, Integer> apiCount = stanfordCoreNLPService.getAllJavaAPI(answerJSON.getString("body"));
+        for (Map.Entry<String, Integer> entry : apiCount.entrySet()) {
+            insertApi(entry.getKey());
+            insertConnectionAnswerAndApi(answerJSON.getInteger("answer_id"), entry.getKey(), entry.getValue());
+        }
     }
     void insertCommentRecord(JSONObject commentJSON) throws SQLException {
         // 将一个评论的JSON数据插入到数据库中
@@ -354,6 +429,11 @@ public class DatabaseService {
             owner.getDisplayName(),
             owner.getReputation()
         );
+        Map<String, Integer> apiCount = stanfordCoreNLPService.getAllJavaAPI(commentJSON.getString("body"));
+        for (Map.Entry<String, Integer> entry : apiCount.entrySet()) {
+            insertApi(entry.getKey());
+            insertConnectionCommentAndApi(commentJSON.getInteger("comment_id"), entry.getKey(), entry.getValue());
+        }
     }
     public double queryNoAnswerQuestionPercent() throws SQLException {
         // 查询没有回答的问题的比例

@@ -167,6 +167,56 @@ public class DataCollector {
             }
             currentQuestionIdList.clear();
         }
+        // 查询每个问题的评论
+        for (int i = 0; i < questionList.size(); i++) {
+            if (i % 100 == 0 && i > 0) {
+                String redColorCode = "\u001B[31m";
+                String resetColorCode = "\u001B[0m";
+                System.out.println(redColorCode + "获取所有问题评论数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
+                StringBuilder ids = new StringBuilder();
+                for (int j = 0; j < currentQuestionIdList.size(); j++) {
+                    ids.append(currentQuestionIdList.get(j));
+                    if (j != currentQuestionIdList.size() - 1) {
+                        ids.append(";");
+                    }
+                }
+                List<JSONObject> jsonObjectList = getCommentsFromQuestion(ids.toString());
+                for (JSONObject jsonObject: jsonObjectList) {
+                    JSONArray answers = jsonObject.getJSONArray("items");
+                    for (int j = 0; j < answers.size(); j++) {
+                        JSONObject item = answers.getJSONObject(j);
+                        if (item != null) {
+                            commentList.add(item);
+                        }
+                    }
+                }
+                currentQuestionIdList.clear();
+            }
+            JSONObject item = questionList.get(i);
+            int questionId = item.getInteger("question_id");
+            currentQuestionIdList.add(questionId);
+        }
+        if (currentQuestionIdList.size() > 0) {
+            StringBuilder ids = new StringBuilder();
+            for (int j = 0; j < currentQuestionIdList.size(); j++) {
+                ids.append(currentQuestionIdList.get(j));
+                if (j != currentQuestionIdList.size() - 1) {
+                    ids.append(";");
+                }
+            }
+            List<JSONObject> jsonObjectList = getCommentsFromQuestion(ids.toString());
+            for (JSONObject jsonObject: jsonObjectList) {
+                JSONArray answers = jsonObject.getJSONArray("items");
+                for (int j = 0; j < answers.size(); j++) {
+                    JSONObject item = answers.getJSONObject(j);
+                    if (item != null) {
+                        commentList.add(item);
+                    }
+                }
+            }
+            currentQuestionIdList.clear();
+        }
+
         // 获取每个回答的评论
         List<Integer> currentAnswerIdList = new ArrayList<>();
         for (int i = 0; i < answerIdList.size(); i++) {
@@ -181,7 +231,7 @@ public class DataCollector {
                         ids.append(";");
                     }
                 }
-                List<JSONObject> jsonObjectList = getComments(ids.toString());
+                List<JSONObject> jsonObjectList = getCommentsFromAnswer(ids.toString());
                 for (JSONObject jsonObject: jsonObjectList) {
                     JSONArray answers = jsonObject.getJSONArray("items");
                     for (int j = 0; j < answers.size(); j++) {
@@ -203,7 +253,7 @@ public class DataCollector {
                     ids += ";";
                 }
             }
-            List<JSONObject> jsonObjectList = getComments(ids);
+            List<JSONObject> jsonObjectList = getCommentsFromAnswer(ids);
             for (JSONObject jsonObject: jsonObjectList) {
                 JSONArray answers = jsonObject.getJSONArray("items");
                 for (int j = 0; j < answers.size(); j++) {
@@ -237,7 +287,7 @@ public class DataCollector {
         System.out.println(redColorCode + "Comment已经插入数据库!" + resetColorCode);
         System.out.println(redColorCode + "数据插入数据库完成！" + resetColorCode);
     }
-    public List<JSONObject> getComments(String ids) {
+    public List<JSONObject> getCommentsFromAnswer(String ids) {
         // 获取每个回答的评论，ids为answer_id的字符串，以分号分隔
         List<JSONObject> jsonObjectList = new ArrayList<>();
         int page = 1;
@@ -246,6 +296,36 @@ public class DataCollector {
             String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
             String apiURL = url + "?" + params;
             System.out.println(apiURL);
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(apiURL);
+            try {
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String responseBody = EntityUtils.toString(entity);
+                    JSONObject data = JSON.parseObject(responseBody);
+                    jsonObjectList.add(data);
+                    if (!data.getBoolean("has_more")) {
+                        break; // 获取所有评论数据
+                    }
+                }
+                response.close();
+                httpClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            page++;
+        }
+        return jsonObjectList;
+    }
+    public List<JSONObject> getCommentsFromQuestion(String ids) {
+        // 获取每个问题的评论，ids为question_id的字符串，以分号分隔
+        List<JSONObject> jsonObjectList = new ArrayList<>();
+        int page = 1;
+        while (true) {
+            String url = "https://api.stackexchange.com/2.3/questions/" + ids + "/comments";
+            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
+            String apiURL = url + "?" + params;
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet(apiURL);
             try {
