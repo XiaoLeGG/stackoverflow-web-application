@@ -2,6 +2,8 @@ package cn.edu.sustech.crawler;
 
 import java.io.*;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,6 +26,12 @@ public class DataCollector {
     private int totalQuestions; // 当前StackOverflow上的问题总数（用来衡量数据爬取的普适性）
     private int NoAnsQuestionTotal; // 当前StackOverflow上的无回答问题总数（计算比例，用来衡量数据爬取的普适性）
     private DatabaseService databaseService; // 数据库服务
+
+    private Timestamp lastRefreshTime; // 上次刷新时间
+
+    public Timestamp getLastRefreshTime() {  // 获取上次刷新时间
+        return lastRefreshTime;
+    }
 
     public void setPageSize(int pageSize) {
         this.pageSize = pageSize;
@@ -71,6 +79,7 @@ public class DataCollector {
         }
         response.close();
         httpClient.close();
+        lastRefreshTime = new Timestamp(System.currentTimeMillis());
     }
     public int getTotalQuestions() throws IOException {
         // 获取stackOverflow上准确的问题总数
@@ -86,6 +95,95 @@ public class DataCollector {
         totalQuestions = getTotalQuestions();
         NoAnsQuestionTotal = getNoAnsQuestionTotal();
         return (double) NoAnsQuestionTotal / totalQuestions;
+    }
+    public List<JSONObject> getCommentsFromAnswer(String ids) {
+        // 获取每个回答的评论，ids为answer_id的字符串，以分号分隔
+        List<JSONObject> jsonObjectList = new ArrayList<>();
+        int page = 1;
+        while (true) {
+            String url = "https://api.stackexchange.com/2.3/answers/" + ids + "/comments";
+            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
+            String apiURL = url + "?" + params;
+            System.out.println(apiURL);
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(apiURL);
+            try {
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String responseBody = EntityUtils.toString(entity);
+                    JSONObject data = JSON.parseObject(responseBody);
+                    jsonObjectList.add(data);
+                    if (!data.getBoolean("has_more")) {
+                        break; // 获取所有评论数据
+                    }
+                }
+                response.close();
+                httpClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            page++;
+        }
+        return jsonObjectList;
+    }
+    public List<JSONObject> getCommentsFromQuestion(String ids) {
+        // 获取每个问题的评论，ids为question_id的字符串，以分号分隔
+        List<JSONObject> jsonObjectList = new ArrayList<>();
+        int page = 1;
+        while (true) {
+            String url = "https://api.stackexchange.com/2.3/questions/" + ids + "/comments";
+            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
+            String apiURL = url + "?" + params;
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(apiURL);
+            try {
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String responseBody = EntityUtils.toString(entity);
+                    JSONObject data = JSON.parseObject(responseBody);
+                    jsonObjectList.add(data);
+                    if (!data.getBoolean("has_more")) {
+                        break; // 获取所有评论数据
+                    }
+                }
+                response.close();
+                httpClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            page++;
+        }
+        return jsonObjectList;
+    }
+    public List<JSONObject> getAnswers(String ids) {
+        // 获取每个问题的回答，ids为question_id的字符串，以分号分隔
+        List<JSONObject> jsonObjectList = new ArrayList<>();
+        int page = 1;
+        while (true) {
+            String url = "https://api.stackexchange.com/2.3/questions/" + ids + "/answers";
+            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=activity&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
+            String apiURL = url + "?" + params;
+            CloseableHttpClient httpClient = HttpClients.createDefault();
+            HttpGet httpGet = new HttpGet(apiURL);
+            try {
+                CloseableHttpResponse response = httpClient.execute(httpGet);
+                HttpEntity entity = response.getEntity();
+                if (entity != null) {
+                    String responseBody = EntityUtils.toString(entity);
+                    JSONObject data = JSON.parseObject(responseBody);
+                    jsonObjectList.add(data);
+                    if (!data.getBoolean("has_more")) break; // 获取所有回答数据
+                }
+                response.close();
+                httpClient.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+            page++;
+        }
+        return jsonObjectList;
     }
     public void collectData() throws IOException, SQLException {
         // 数据爬取
@@ -287,94 +385,6 @@ public class DataCollector {
         System.out.println(redColorCode + "Comment已经插入数据库!" + resetColorCode);
         System.out.println(redColorCode + "数据插入数据库完成！" + resetColorCode);
     }
-    public List<JSONObject> getCommentsFromAnswer(String ids) {
-        // 获取每个回答的评论，ids为answer_id的字符串，以分号分隔
-        List<JSONObject> jsonObjectList = new ArrayList<>();
-        int page = 1;
-        while (true) {
-            String url = "https://api.stackexchange.com/2.3/answers/" + ids + "/comments";
-            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
-            String apiURL = url + "?" + params;
-            System.out.println(apiURL);
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet(apiURL);
-            try {
-                CloseableHttpResponse response = httpClient.execute(httpGet);
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    String responseBody = EntityUtils.toString(entity);
-                    JSONObject data = JSON.parseObject(responseBody);
-                    jsonObjectList.add(data);
-                    if (!data.getBoolean("has_more")) {
-                        break; // 获取所有评论数据
-                    }
-                }
-                response.close();
-                httpClient.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            page++;
-        }
-        return jsonObjectList;
-    }
-    public List<JSONObject> getCommentsFromQuestion(String ids) {
-        // 获取每个问题的评论，ids为question_id的字符串，以分号分隔
-        List<JSONObject> jsonObjectList = new ArrayList<>();
-        int page = 1;
-        while (true) {
-            String url = "https://api.stackexchange.com/2.3/questions/" + ids + "/comments";
-            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
-            String apiURL = url + "?" + params;
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet(apiURL);
-            try {
-                CloseableHttpResponse response = httpClient.execute(httpGet);
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    String responseBody = EntityUtils.toString(entity);
-                    JSONObject data = JSON.parseObject(responseBody);
-                    jsonObjectList.add(data);
-                    if (!data.getBoolean("has_more")) {
-                        break; // 获取所有评论数据
-                    }
-                }
-                response.close();
-                httpClient.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            page++;
-        }
-        return jsonObjectList;
-    }
-    public List<JSONObject> getAnswers(String ids) {
-        // 获取每个问题的回答，ids为question_id的字符串，以分号分隔
-        List<JSONObject> jsonObjectList = new ArrayList<>();
-        int page = 1;
-        while (true) {
-            String url = "https://api.stackexchange.com/2.3/questions/" + ids + "/answers";
-            String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=activity&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
-            String apiURL = url + "?" + params;
-            CloseableHttpClient httpClient = HttpClients.createDefault();
-            HttpGet httpGet = new HttpGet(apiURL);
-            try {
-                CloseableHttpResponse response = httpClient.execute(httpGet);
-                HttpEntity entity = response.getEntity();
-                if (entity != null) {
-                    String responseBody = EntityUtils.toString(entity);
-                    JSONObject data = JSON.parseObject(responseBody);
-                    jsonObjectList.add(data);
-                    if (!data.getBoolean("has_more")) break; // 获取所有回答数据
-                }
-                response.close();
-                httpClient.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-            page++;
-        }
-        return jsonObjectList;
-    }
+
 
 }

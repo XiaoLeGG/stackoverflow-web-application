@@ -1,6 +1,6 @@
 package cn.edu.sustech.crawler;
 
-public class Owner {
+public class User {
     private String profileImage;
     private int accountId;
     private String userType;
@@ -8,7 +8,7 @@ public class Owner {
     private String link;
     private String displayName;
     private int reputation;
-    Owner(String profileImage, int accountId, String userType, int userId, String link, String displayName, int reputation) {
+    User(String profileImage, int accountId, String userType, int userId, String link, String displayName, int reputation) {
         this.profileImage = profileImage;
         this.accountId = accountId;
         this.userType = userType;
