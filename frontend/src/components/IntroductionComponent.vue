@@ -8,7 +8,7 @@
         Stack Overflow Web Application is a web application that collect and analyze statistics of Stack Overflow such as the most popular tags, the most popular questions, the most popular users, etc.
       </introduction-content>
     </introduction-text>
-    <img src="../assets/bg/sof.png" style="width: 40%; height: auto; user-select: none; border-radius: 20px; -webkit-filter: drop-shadow(10px 10px 10px rgba(0,0,0,.1));"/>
+    <img src="../assets/bg/sof.png" style="width: 40%; height: auto; user-select: none; border-radius: 20px; -webkit-filter: drop-shadow(10px 10px 10px rgba(0,0,0,.2));"/>
   </div>
 </template>
 
@@ -26,6 +26,8 @@ export default {
   flex-direction: row;
   justify-content: center;
   caret-color: transparent;
+  padding-bottom: 70px;
+  border-bottom: solid 1px var(--color-background-soft);
 }
 
 introduction-text {
@@ -42,7 +44,6 @@ introduction-text {
 }
 
 introduction-title > h1 {
-  text-align: left;
   margin-bottom: 10px;
   font-size: 2.6rem;
   font-weight: 500;

@@ -4,6 +4,8 @@ import java.io.*;
 import java.sql.SQLException;
 import java.sql.Time;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -104,7 +106,7 @@ public class DataCollector {
             String url = "https://api.stackexchange.com/2.3/answers/" + ids + "/comments";
             String params = String.format("page=%d&pagesize=%d&filter=withbody&order=desc&sort=creation&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", page, pageSize);
             String apiURL = url + "?" + params;
-            System.out.println(apiURL);
+            info(apiURL);
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpGet httpGet = new HttpGet(apiURL);
             try {
@@ -192,7 +194,7 @@ public class DataCollector {
             // 按照activity排序，获取每隔pageStep页的pageSize个问题
             String redColorCode = "\u001B[31m";
             String resetColorCode = "\u001B[0m";
-            System.out.println(redColorCode + "获取所有提问数据ing：" + (int)(100 * ((double)i / pageTotal)) + "%" + resetColorCode);
+            info(redColorCode + "获取所有提问数据ing：" + (int)(100 * ((double)i / pageTotal)) + "%" + resetColorCode);
             String url = "https://api.stackexchange.com/2.3/questions";
             String params = String.format("page=%d&pagesize=%d&order=desc&sort=activity&tagged=java&filter=withbody&site=stackoverflow&key=gqjiH6ExBbic7NaMoFxC)w((", i, pageSize);
             String apiURL = url + "?" + params;
@@ -219,7 +221,7 @@ public class DataCollector {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "获取所有回答数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
+                info(redColorCode + "获取所有回答数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
                 StringBuilder ids = new StringBuilder();
                 for (int j = 0; j < currentQuestionIdList.size(); j++) {
                     ids.append(currentQuestionIdList.get(j));
@@ -270,7 +272,7 @@ public class DataCollector {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "获取所有问题评论数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
+                info(redColorCode + "获取所有问题评论数据ing：" + (int)(100 * ((double)i / questionList.size())) + "%" + resetColorCode);
                 StringBuilder ids = new StringBuilder();
                 for (int j = 0; j < currentQuestionIdList.size(); j++) {
                     ids.append(currentQuestionIdList.get(j));
@@ -321,7 +323,7 @@ public class DataCollector {
             if (i % 100 == 0 && i > 0) {
                 String redColorCode = "\u001B[31m";
                 String resetColorCode = "\u001B[0m";
-                System.out.println(redColorCode + "获取所有评论数据ing：" + (int)(100 * ((double)i / answerIdList.size())) + "%" + resetColorCode);
+                info(redColorCode + "获取所有评论数据ing：" + (int)(100 * ((double)i / answerIdList.size())) + "%" + resetColorCode);
                 StringBuilder ids = new StringBuilder();
                 for (int j = 0; j < currentAnswerIdList.size(); j++) {
                     ids.append(currentAnswerIdList.get(j));
@@ -361,29 +363,36 @@ public class DataCollector {
             }
             currentAnswerIdList.clear();
         }
-        System.out.println("爬取Question总数：" + questionList.size());
-        System.out.println("爬取Answer总数：" + answerList.size());
-        System.out.println("爬取Comment总数：" + commentList.size());
+        info("爬取Question总数：" + questionList.size());
+        info("爬取Answer总数：" + answerList.size());
+        info("爬取Comment总数：" + commentList.size());
         // 将数据插入数据库
         String redColorCode = "\u001B[31m";
         String resetColorCode = "\u001B[0m";
-        System.out.println(redColorCode + "数据插入数据库" + resetColorCode);
+        info(redColorCode + "数据插入数据库" + resetColorCode);
         for (int i = 0; i < questionList.size(); i++) {
             JSONObject questionItem = questionList.get(i);
             databaseService.insertQuestionRecord(questionItem);
         }
-        System.out.println(redColorCode + "Question已经插入数据库!" + resetColorCode);
+        info(redColorCode + "Question已经插入数据库!" + resetColorCode);
         for (int i = 0; i < answerList.size(); i++) {
             JSONObject answerItem = answerList.get(i);
             databaseService.insertAnswerRecord(answerItem);
         }
-        System.out.println(redColorCode + "Answer已经插入数据库!" + resetColorCode);
+        info(redColorCode + "Answer已经插入数据库!" + resetColorCode);
         for (int i = 0; i < commentList.size(); i++) {
             JSONObject commentItem = commentList.get(i);
             databaseService.insertCommentRecord(commentItem);
         }
-        System.out.println(redColorCode + "Comment已经插入数据库!" + resetColorCode);
-        System.out.println(redColorCode + "数据插入数据库完成！" + resetColorCode);
+        info(redColorCode + "Comment已经插入数据库!" + resetColorCode);
+        info(redColorCode + "数据插入数据库完成！" + resetColorCode);
+        databaseService.insertUpdateTime();
+        info(redColorCode + "更新时间已经插入数据库！" + resetColorCode);
+    }
+    
+    private static void info(String message) {
+        //System out message with formatted time prefix
+        System.out.println(String.format("[%s] %s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), message));
     }
 
 

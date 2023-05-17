@@ -10,7 +10,7 @@ import java.util.Date;
 public class Question {
 	
 	@TableId("question_id")
-	private int id;
+	private int questionId;
 	
 	@TableField("score")
 	private int score;
@@ -45,12 +45,12 @@ public class Question {
 	@TableField("account_id")
 	private int accountId;
 	
-	public int getId() {
-		return id;
+	public int getQuestionId() {
+		return questionId;
 	}
 	
-	public void setId(int id) {
-		this.id = id;
+	public void setQuestionId(int id) {
+		this.questionId = id;
 	}
 	
 	public int getScore() {

@@ -49,10 +49,11 @@
 <script>
   import HeaderComponent from "@/components/HeaderComponent.vue";
   import IntroductionComponent from "@/components/IntroductionComponent.vue";
+  import ContentComponent from "@/components/ContentComponent.vue";
 
   export default {
     name: 'App',
-    components: {IntroductionComponent, HeaderComponent},
+    components: {ContentComponent, IntroductionComponent, HeaderComponent},
     data() {
       return {
         headerMargin: {
@@ -72,5 +73,8 @@
   </div>
   <div :style="headerMargin">
     <IntroductionComponent/>
+  </div>
+  <div>
+    <ContentComponent/>
   </div>
 </template>
