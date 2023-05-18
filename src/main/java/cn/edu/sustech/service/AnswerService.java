@@ -32,4 +32,19 @@ public class AnswerService {
 			.eq("question_id", questionID);
 		return mapper.selectList(wrapper);
 	}
+
+	public List<Answer> queryAnswerByDate(Date from, Date end) {
+		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
+		wrapper
+			.between("creation_date", from, end);
+		return mapper.selectList(wrapper);
+	}
+
+	public List<Answer> queryAnswerByAnswerID(int answerID) {
+		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
+		wrapper
+			.eq("answer_id", answerID);
+		return mapper.selectList(wrapper);
+	}
+
 }
