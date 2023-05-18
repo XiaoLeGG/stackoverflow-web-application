@@ -54,14 +54,12 @@
       <artifactId>stanford-corenlp</artifactId>
       <version>${corenlp.version}</version>
     </dependency>
-
     <dependency>
       <groupId>edu.stanford.nlp</groupId>
       <artifactId>stanford-corenlp</artifactId>
       <version>${corenlp.version}</version>
       <classifier>models</classifier>
     </dependency>
-
     <dependency>
       <groupId>edu.stanford.nlp</groupId>
       <artifactId>stanford-corenlp</artifactId>
@@ -83,6 +81,11 @@
       <groupId>com.baomidou</groupId>
       <artifactId>mybatis-plus-boot-starter</artifactId>
       <version>3.5.3.1</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-collections4</artifactId>
+      <version>4.4</version>
     </dependency>
   </dependencies>
 
