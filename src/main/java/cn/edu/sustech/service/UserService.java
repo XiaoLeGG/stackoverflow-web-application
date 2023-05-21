@@ -7,12 +7,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
-	
-	@Autowired
-	private UserMapper userMapper;
-	
-	public User userById(int id) {
-		return userMapper.selectById(id);
-	}
-	
+
+  @Autowired private UserMapper userMapper;
+
+  public User userById(int id) {
+    return userMapper.selectById(id);
+  }
 }

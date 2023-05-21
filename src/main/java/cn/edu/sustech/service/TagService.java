@@ -12,34 +12,32 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class TagService {
-	
-	@Autowired
-	private TagMapper tagMapper;
-	
-	@Autowired
-	private TagConnectMapper connectMapper;
-	
-	public List<Tag> allTags() {
-		return tagMapper.selectList(new QueryWrapper<>());
-	}
-	
-	public List<Map<String, Object>> tagCounts() {
-		QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
-		wrapper.select("tag_name", "count(*) as count")
-			.groupBy("tag_name");
-		return connectMapper.selectMaps(wrapper) ;
-	}
 
-	public List<Map<String, Object>> tagGroups() {
-		QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
-		wrapper.select("question_id", "string_agg(tag_name, ',' ORDER BY tag_name) as tag_group")
-				.groupBy("question_id");
-		return connectMapper.selectMaps(wrapper);
-	}
+  @Autowired private TagMapper tagMapper;
 
-	public List<TagConnect> tagsByQuestionId(int questionID) {
-		QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
-		wrapper.eq("question_id", questionID);
-		return connectMapper.selectList(wrapper);
-	}
+  @Autowired private TagConnectMapper connectMapper;
+
+  public List<Tag> allTags() {
+    return tagMapper.selectList(new QueryWrapper<>());
+  }
+
+  public List<Map<String, Object>> tagCounts() {
+    QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
+    wrapper.select("tag_name", "count(*) as count").groupBy("tag_name");
+    return connectMapper.selectMaps(wrapper);
+  }
+
+  public List<Map<String, Object>> tagGroups() {
+    QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
+    wrapper
+        .select("question_id", "string_agg(tag_name, ',' ORDER BY tag_name) as tag_group")
+        .groupBy("question_id");
+    return connectMapper.selectMaps(wrapper);
+  }
+
+  public List<TagConnect> tagsByQuestionId(int questionID) {
+    QueryWrapper<TagConnect> wrapper = new QueryWrapper<>();
+    wrapper.eq("question_id", questionID);
+    return connectMapper.selectList(wrapper);
+  }
 }

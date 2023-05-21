@@ -1,17 +1,15 @@
 package cn.edu.sustech.crawler;
 
+import com.alibaba.fastjson.JSON;
+import com.alibaba.fastjson.JSONArray;
+import com.alibaba.fastjson.JSONObject;
 import java.io.*;
 import java.sql.SQLException;
-import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONArray;
-import com.alibaba.fastjson.JSONObject;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
@@ -22,12 +20,12 @@ import org.apache.http.util.EntityUtils;
 public class DataCollector {
     private int pageSize; // 分页获取数据时每页的大小 [1, 100]
     private int pageStep; // 分页获取数据时每次获取所隔的页数
-    private List<JSONObject> questionList; // 获取问题JSON列表
-    private List<JSONObject> answerList;  // 获取回答JSON列表
-    private List<JSONObject> commentList; // 获取评论JSON列表
+    private final List<JSONObject> questionList; // 获取问题JSON列表
+    private final List<JSONObject> answerList;  // 获取回答JSON列表
+    private final List<JSONObject> commentList; // 获取评论JSON列表
     private int totalQuestions; // 当前StackOverflow上的问题总数（用来衡量数据爬取的普适性）
     private int NoAnsQuestionTotal; // 当前StackOverflow上的无回答问题总数（计算比例，用来衡量数据爬取的普适性）
-    private DatabaseService databaseService; // 数据库服务
+    private final DatabaseService databaseService; // 数据库服务
 
     private Timestamp lastRefreshTime; // 上次刷新时间
 
@@ -392,7 +390,7 @@ public class DataCollector {
     
     private static void info(String message) {
         //System out message with formatted time prefix
-        System.out.println(String.format("[%s] %s", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), message));
+        System.out.printf("[%s] %s%n", LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), message);
     }
 
 

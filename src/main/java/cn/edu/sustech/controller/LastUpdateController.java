@@ -11,12 +11,10 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("api/last_update")
 public class LastUpdateController {
 
-	@Autowired
-	private LastUpdateService service;
-	
-	@GetMapping("time")
-	public Date lastUpdateTime() {
-		return service.lastUpdateTime();
-	}
-	
+  @Autowired private LastUpdateService service;
+
+  @GetMapping("time")
+  public Date lastUpdateTime() {
+    return service.lastUpdateTime();
+  }
 }

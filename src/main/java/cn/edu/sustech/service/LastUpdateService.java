@@ -8,12 +8,10 @@ import org.springframework.stereotype.Service;
 
 @Service
 public class LastUpdateService {
-	
-	@Autowired
-	private LastUpdateMapper lastUpdateMapper;
-	
-	public Date lastUpdateTime() {
-    	return lastUpdateMapper.selectOne(new QueryWrapper<>()).getLastUpdateTime();
-	}
-	
+
+  @Autowired private LastUpdateMapper lastUpdateMapper;
+
+  public Date lastUpdateTime() {
+    return lastUpdateMapper.selectOne(new QueryWrapper<>()).getLastUpdateTime();
+  }
 }

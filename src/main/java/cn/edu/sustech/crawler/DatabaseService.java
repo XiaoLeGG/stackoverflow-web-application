@@ -1,23 +1,19 @@
 package cn.edu.sustech.crawler;
 
 import com.alibaba.fastjson.JSONObject;
-import org.postgresql.util.PGInterval;
-
-
 import java.sql.*;
-import java.util.HashMap;
 import java.util.Map;
 
 public class DatabaseService {
 	
 	private Connection connection; // 数据库连接
-	private String host; // 数据库主机
-	private int port; // 数据库端口
-	private String user; // 数据库用户名
-	private String password; // 数据库密码
-	private String database; // 数据库名
+	private final String host; // 数据库主机
+	private final int port; // 数据库端口
+	private final String user; // 数据库用户名
+	private final String password; // 数据库密码
+	private final String database; // 数据库名
 	
-	private StanfordCoreNLPService stanfordCoreNLPService;
+	private final StanfordCoreNLPService stanfordCoreNLPService;
 	
 	public DatabaseService(String host, int port, String user, String password, String database) {
 		// 初始化数据库连接配置

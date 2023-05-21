@@ -9,7 +9,5 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/api/comment")
 public class CommentController {
 
-	@Autowired
-	private CommentService service;
-
+  @Autowired private CommentService service;
 }

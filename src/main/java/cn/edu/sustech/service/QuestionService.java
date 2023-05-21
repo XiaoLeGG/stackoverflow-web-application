@@ -5,43 +5,33 @@ import cn.edu.sustech.mapper.QuestionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import java.util.Date;
 import java.util.List;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class QuestionService {
-	
-	@Autowired
-	private QuestionMapper mapper;
 
-	public QuestionMapper getMapper() {
-		return mapper;
-	}
-	public List<Question> totalQuestion(Date from, Date end) {
-		QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
-		wrapper
-			.ge("creation_date", from)
-			.le("creation_date", end);
-		return mapper.selectList(wrapper);
-	}
-	
-	public List<Question> noAnswer(Date from, Date end) {
-		QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
-		wrapper
-			.ge("creation_date", from)
-			.le("creation_date", end)
-			.eq("answer_count", 0);
-		return mapper.selectList(wrapper);
-	}
+  @Autowired private QuestionMapper mapper;
 
-	public List<Question> withAnswer(Date from, Date end) {
-		QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
-		wrapper
-			.ge("creation_date", from)
-			.le("creation_date", end)
-			.gt("answer_count", 0);
-		return mapper.selectList(wrapper);
-	}
-	
+  public QuestionMapper getMapper() {
+    return mapper;
+  }
+
+  public List<Question> totalQuestion(Date from, Date end) {
+    QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
+    wrapper.ge("creation_date", from).le("creation_date", end);
+    return mapper.selectList(wrapper);
+  }
+
+  public List<Question> noAnswer(Date from, Date end) {
+    QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
+    wrapper.ge("creation_date", from).le("creation_date", end).eq("answer_count", 0);
+    return mapper.selectList(wrapper);
+  }
+
+  public List<Question> withAnswer(Date from, Date end) {
+    QueryWrapper<Question> wrapper = new QueryWrapper<Question>();
+    wrapper.ge("creation_date", from).le("creation_date", end).gt("answer_count", 0);
+    return mapper.selectList(wrapper);
+  }
 }
