@@ -1,9 +1,7 @@
 package cn.edu.sustech.service;
 
 import cn.edu.sustech.entity.Answer;
-import cn.edu.sustech.entity.Question;
 import cn.edu.sustech.mapper.AnswerMapper;
-import cn.edu.sustech.mapper.QuestionMapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -19,28 +17,29 @@ public class AnswerService {
 	public AnswerMapper getMapper() {
 		return mapper;
 	}
-	public List<Answer> queryWithAcceptedAnswerByQuestionID(int questionID) {
+	public List<Answer> acceptedAnswerByQuestionId(int questionID) {
 		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
 		wrapper
 			.eq("question_id", questionID)
-			.eq("is_accepted", true);
+			.eq("is_accepted", true)
+			.last("limit 1");
 		return mapper.selectList(wrapper);
 	}
-	public List<Answer> queryAllAnswerByQuestionID(int questionID) {
+	public List<Answer> answerByQuestionID(int questionID) {
 		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
 		wrapper
 			.eq("question_id", questionID);
 		return mapper.selectList(wrapper);
 	}
 
-	public List<Answer> queryAnswerByDate(Date from, Date end) {
+	public List<Answer> answerByDate(Date from, Date end) {
 		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
 		wrapper
 			.between("creation_date", from, end);
 		return mapper.selectList(wrapper);
 	}
 
-	public List<Answer> queryAnswerByAnswerID(int answerID) {
+	public List<Answer> answerByAnswerId(int answerID) {
 		QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
 		wrapper
 			.eq("answer_id", answerID);

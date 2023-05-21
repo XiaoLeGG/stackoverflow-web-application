@@ -1,13 +1,13 @@
 <template>
   <div class="intro-block">
-    <introduction-text>
-      <introduction-title>
+    <div class="introduction-text">
+      <div class="introduction-title">
         <h1>Introduction</h1>
-      </introduction-title>
-      <introduction-content>
+      </div>
+      <div class="introduction-content">
         Stack Overflow Web Application is a web application that collect and analyze statistics of Stack Overflow such as the most popular tags, the most popular questions, the most popular users, etc.
-      </introduction-content>
-    </introduction-text>
+      </div>
+    </div>
     <img src="../assets/bg/sof.png" style="width: 40%; height: auto; user-select: none; border-radius: 20px; -webkit-filter: drop-shadow(10px 10px 10px rgba(0,0,0,.2));"/>
   </div>
 </template>
@@ -30,7 +30,7 @@ export default {
   border-bottom: solid 1px var(--color-background-soft);
 }
 
-introduction-text {
+.introduction-text {
   display: flex;
   flex-direction: column;
   align-items: start;
@@ -43,14 +43,14 @@ introduction-text {
 
 }
 
-introduction-title > h1 {
+.introduction-title > h1 {
   margin-bottom: 10px;
   font-size: 2.6rem;
   font-weight: 500;
   color: var(--color-heading);
 }
 
-introduction-content {
+.introduction-content {
   text-align: left;
   font-size: 1.2rem;
   color: var(--color-text);

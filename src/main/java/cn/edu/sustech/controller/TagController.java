@@ -9,7 +9,6 @@ import cn.edu.sustech.service.TagService;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import edu.stanford.nlp.util.CollectionUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,11 +16,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.persistence.criteria.CriteriaBuilder;
-
 @RestController
 @RequestMapping("/api/tag")
 public class TagController {
+	
+	private final static boolean REMOVE_JAVA = true;
 	
 	@Autowired
 	private TagService tagService;
@@ -29,28 +28,25 @@ public class TagController {
 	private QuestionService questionService;
 	
 	@GetMapping("/single-tag/all/name")
-	public List<Tag> getAllTags() {
-		return tagService.getTags();
+	public List<Tag> allTagsQuery() {
+		return tagService.allTags();
 	}
 
 	@GetMapping("/group-tag/all/name")
-	public List<String> getAllGroupTags() {
-		List<Map<String, Object>> tagGroups = tagService.getTagGroups();
-		Set<String> set = new HashSet<>();
-		for (Map<String, Object> tagGroup : tagGroups) {
-			set.add((String) tagGroup.get("tag_group"));
-		}
-		return new ArrayList<>(set);
+	public List<String> allTagGroupsQuery() {
+		List<Map<String, Object>> tagGroups = tagService.tagGroups();
+		return tagGroups.stream().map(tagGroup -> (String) tagGroup.get("tag_group")).distinct()
+			.collect(Collectors.toList());
 	}
 
 
 	@GetMapping("/single-tag/all/count")
-	public List<Map<String, Object>> getAllTagCounts() {
-		return tagService.getTagCounts();
+	public List<Map<String, Object>> allTagCountsQuery() {
+		return tagService.tagCounts();
 	}
 
 	private static List<List<String>> getSubListsOfSize(List<String> list, int size) {
-		List<String> nowList = list.stream().distinct().sorted().collect(Collectors.toList());
+		List<String> nowList = list.stream().distinct().sorted().toList();
 		List<List<String>> result = new ArrayList<>();
 		for (int i = 0; i < (1 << nowList.size()); i++) {
 			if (Integer.bitCount(i) == size) {
@@ -65,156 +61,166 @@ public class TagController {
 		}
 		return result;
 	}
+	
 	@GetMapping("/group-tag/all/count")
-	public Map<String, Integer> getAllTagGroupCounts(@RequestParam("size") int size) {
-		List<Map<String, Object>> tagGroups = tagService.getTagGroups();
+	public List<Map<String, Object>> allTagGroupCountsQuery(@RequestParam("size") int size) {
+		List<Map<String, Object>> tagGroups = tagService.tagGroups();
 		Map<String, Integer> map = new HashMap<>();
-		for (Map<String, Object> tagGroup : tagGroups) {
-			List<String> tags = new ArrayList<>();
-			for (String tag : ((String) tagGroup.get("tag_group")).split(",")) {
-				tags.add(tag);
-			}
+		tagGroups.forEach(tagGroup -> {
+			List<String> tags = Arrays.asList(((String) tagGroup.get("tags")).split(","));
 			List<List<String>> subListsOfSize = getSubListsOfSize(tags, size);
-			for (List<String> subList : subListsOfSize) {
+			subListsOfSize.forEach(subList -> {
 				String key = subList.stream().sorted().collect(Collectors.joining(","));
-				if (map.containsKey(key)) {
-					map.put(key, map.get(key) + 1);
-				} else {
-					map.put(key, 1);
-				}
-			}
-		}
-		return map;
+				map.merge(key, 1, Integer::sum);
+			});
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tags", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 
 	@GetMapping("/single-tag/count")
-	public Map<String, Integer> getSingeTagCount(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getSingeTagCount(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 													  @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			for (TagConnect tagConnect : tags) {
-				String tagName = tagConnect.getTagName();
-				if (map.containsKey(tagName)) {
-					map.put(tagName, map.get(tagName) + 1);
-				} else {
-					map.put(tagName, 1);
-				}
-			}
-		}
-		return map;
+    	total.forEach(
+        question -> {
+          List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+          tags.forEach(
+              tag -> {
+                String tagName = tag.getTagName();
+                if (REMOVE_JAVA && tagName.equals("java")) {
+                  return;
+                }
+                map.merge(tagName, 1, Integer::sum);
+              });
+        });
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tag", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
-
-
-	@GetMapping("group-tag/count")
-	public Map<String, Integer> getAllTagGroupCounts(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	
+	@GetMapping("/group-tag/count")
+	public List<Map<String, Object>> allTagGroupCountsQuery(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 													 @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end, @RequestParam("size") int size) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			List<String> tagNames = new ArrayList<>();
-			for (TagConnect tagConnect : tags) {
-				tagNames.add(tagConnect.getTagName());
-			}
-			List<List<String>> subListsOfSize = getSubListsOfSize(tagNames, size);
-			for (List<String> subList : subListsOfSize) {
-				String key = subList.stream().sorted().collect(Collectors.joining(","));
-				if (map.containsKey(key)) {
-					map.put(key, map.get(key) + 1);
-				} else {
-					map.put(key, 1);
-				}
-			}
-		}
-		return map;
+    	total.forEach(question -> {
+			List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+			List<String> tagNames = new ArrayList<>(
+				tags.stream().map(TagConnect::getTagName).toList());
+			if (REMOVE_JAVA) {
+            	tagNames.remove("java");
+          	}
+          	List<List<String>> subListsOfSize = getSubListsOfSize(tagNames, size);
+          	subListsOfSize.forEach(subList -> {
+                	String key = subList.stream().sorted().collect(Collectors.joining(","));
+                	map.merge(key, 1, Integer::sum);
+			  });
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tags", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 
 	@GetMapping("/single-tag/upvote")
-	public Map<String, Integer> getSingeTagUpvote(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getSingeTagUpvote(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 												 @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			for (TagConnect tagConnect : tags) {
-				String tagName = tagConnect.getTagName();
-				if (map.containsKey(tagName)) {
-					map.put(tagName, map.get(tagName) + total.get(i).getScore());
-				} else {
-					map.put(tagName, total.get(i).getScore());
+		total.forEach(question -> {
+			List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+			tags.forEach(tag -> {
+				String tagName = tag.getTagName();
+				if (REMOVE_JAVA && tagName.equals("java")) {
+					return;
 				}
-			}
-		}
-		return map;
+				map.merge(tagName, question.getScore(), Integer::sum);
+			});
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tag", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 
 	@GetMapping("/group-tag/upvote")
-	public Map<String, Integer> getGroupTagUpvote(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getGroupTagUpvote(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 													 @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end, @RequestParam("size") int size) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			List<String> tagNames = new ArrayList<>();
-			for (TagConnect tagConnect : tags) {
-				tagNames.add(tagConnect.getTagName());
+		total.forEach(question -> {
+			List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+			List<String> tagNames = new ArrayList<>(
+				tags.stream().map(TagConnect::getTagName).toList());
+			if (REMOVE_JAVA) {
+				tagNames.remove("java");
 			}
 			List<List<String>> subListsOfSize = getSubListsOfSize(tagNames, size);
-			for (List<String> subList : subListsOfSize) {
+			subListsOfSize.forEach(subList -> {
 				String key = subList.stream().sorted().collect(Collectors.joining(","));
-				if (map.containsKey(key)) {
-					map.put(key, map.get(key) + total.get(i).getScore());
-				} else {
-					map.put(key, total.get(i).getScore());
-				}
-			}
-		}
-		return map;
+				map.merge(key, question.getScore(), Integer::sum);
+			});
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tags", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 
-
 	@GetMapping("/single-tag/view")
-	public Map<String, Integer> getSingeTagView(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getSingeTagView(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 												  @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			for (TagConnect tagConnect : tags) {
-				String tagName = tagConnect.getTagName();
-				if (map.containsKey(tagName)) {
-					map.put(tagName, map.get(tagName) + total.get(i).getViewCount());
-				} else {
-					map.put(tagName, total.get(i).getViewCount());
+		total.forEach(question -> {
+			List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+			tags.forEach(tag -> {
+				String tagName = tag.getTagName();
+				if (REMOVE_JAVA && tagName.equals("java")) {
+					return;
 				}
-			}
-		}
-		return map;
+				map.merge(tagName, question.getViewCount(), Integer::sum);
+			});
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tag", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 
 	@GetMapping("/group-tag/view")
-	public Map<String, Integer> getGroupTagView(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getGroupTagView(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 														 @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end, @RequestParam("size") int size) {
-		List<Question> total = questionService.allQuery(from, end);
+		List<Question> total = questionService.totalQuestion(from, end);
 		Map<String, Integer> map = new HashMap<>();
-		for (int i = 0; i < total.size(); i++) {
-			List<TagConnect> tags = tagService.getTagsByQuestionID(total.get(i).getQuestionId());
-			List<String> tagNames = new ArrayList<>();
-			for (TagConnect tagConnect : tags) {
-				tagNames.add(tagConnect.getTagName());
+		total.forEach(question -> {
+			List<TagConnect> tags = tagService.tagsByQuestionId(question.getQuestionId());
+			List<String> tagNames = new ArrayList<>(
+				tags.stream().map(TagConnect::getTagName).toList());
+			if (REMOVE_JAVA) {
+				tagNames.remove("java");
 			}
 			List<List<String>> subListsOfSize = getSubListsOfSize(tagNames, size);
-			for (List<String> subList : subListsOfSize) {
+			subListsOfSize.forEach(subList -> {
 				String key = subList.stream().sorted().collect(Collectors.joining(","));
-				if (map.containsKey(key)) {
-					map.put(key, map.get(key) + total.get(i).getViewCount());
-				} else {
-					map.put(key, total.get(i).getViewCount());
-				}
-			}
-		}
-		return map;
+				map.merge(key, question.getViewCount(), Integer::sum);
+			});
+		});
+		List<Map<String, Object>> result = new ArrayList<>();
+		map.entrySet().stream().sorted((e1, e2) -> -e1.getValue().compareTo(e2.getValue())).forEach(e -> {
+			result.add(Map.of("tags", e.getKey(), "count", e.getValue()));
+		});
+		return result;
 	}
 }

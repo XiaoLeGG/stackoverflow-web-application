@@ -1,11 +1,13 @@
 <template>
   <div class="container-main">
-    <name-label>
+    <div class="name-label">
       <slot name="heading"></slot>
-    </name-label>
-    <container>
-      <slot name="content"></slot>
-    </container>
+    </div>
+    <div class="container">
+      <slot name="introduction" class="introduction"></slot>
+      <slot name="parameters_input" class="parameters-input"></slot>
+      <slot name="chart"></slot>
+    </div>
   </div>
 </template>
 
@@ -14,10 +16,23 @@
     display: flex;
     flex-direction: column;
     align-items: flex-start;
-    flex-basis: min-content;
+    flex-basis: max-content;
     -webkit-filter: drop-shadow(10px 10px 10px rgba(0,0,0,.2));
+    caret-color: transparent;
+
   }
-  name-label {
+
+  .introduction {
+    color: var(--color-text);
+
+  }
+
+  .parameters-input {
+    display: flex;
+
+  }
+
+  .name-label {
     background-color: var(--color-background-soft-hover);
     caret-color: transparent;
     flex-basis: 40px;
@@ -34,11 +49,14 @@
     color: var(--color-heading);
   }
 
-  container {
-    background-color: transparent;
+  .container {
     border: 3px solid var(--color-border);
-    width: 600px;
-    flex-basis: 500px;
+    display: flex;
+    justify-content: flex-start;
+    flex-direction: column;
+    gap: 25px;
+    flex-basis: max-content;
+    width: 650px;
     padding: 1.3em 2em 1.3em 2em;
     background-color: var(--color-background-soft-hover);
   }

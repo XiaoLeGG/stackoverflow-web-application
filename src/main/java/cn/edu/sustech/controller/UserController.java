@@ -3,7 +3,6 @@ package cn.edu.sustech.controller;
 import cn.edu.sustech.entity.Answer;
 import cn.edu.sustech.entity.Comment;
 import cn.edu.sustech.entity.Question;
-import cn.edu.sustech.entity.User;
 import cn.edu.sustech.service.AnswerService;
 import cn.edu.sustech.service.CommentService;
 import cn.edu.sustech.service.QuestionService;
@@ -31,143 +30,109 @@ public class UserController {
 	private QuestionService questionService;
 
 	@GetMapping("/post-answer-distribution")
-	public Map<Integer, Integer> getPostAnswerDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<int[]> getPostAnswerDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 														  @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Answer> answers = answerService.queryAnswerByDate(from, end);
-		Map<String, HashSet<String>> map = new HashMap<>();
-		for (Answer answer : answers) {
-			if (map.containsKey(String.valueOf(answer.getQuestionId()))) {
-				map.get(String.valueOf(answer.getQuestionId())).add(String.valueOf(answer.getAccountId()));
-			} else {
-				HashSet<String> set = new HashSet<>();
-				set.add(String.valueOf(answer.getAccountId()));
-				map.put(String.valueOf(answer.getQuestionId()), set);
-			}
-		}
+		List<Answer> answers = answerService.answerByDate(from, end);
+		Map<Integer, HashSet<Integer>> map = new HashMap<>();
+		answers.forEach(answer -> {
+			map.merge(answer.getQuestionId(), new HashSet<>(Collections.singletonList(answer.getAccountId())), (oldValue, newValue) -> {
+				oldValue.addAll(newValue);
+				return oldValue;
+			});
+		});
 		Map<Integer, Integer> result = new HashMap<>();
-		for (String key : map.keySet()) {
-			if (result.containsKey(map.get(key).size())) {
-				result.put(map.get(key).size(), result.get(map.get(key).size()) + 1);
-			} else {
-				result.put(map.get(key).size(), 1);
-			}
-		}
-		return result;
+		map.forEach((key, value) -> result.merge(value.size(), 1, Integer::sum));
+		List<int[]> resultList = new ArrayList<>();
+		result.forEach((key, value) -> resultList.add(new int[]{key, value}));
+		return resultList;
 	}
 
 
 	@GetMapping("/post-comment-distribution")
-	public Map<Integer, Integer> getPostCommentDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<int[]> getPostCommentDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 														   @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Comment> comments = commentService.queryCommentByDate(from, end);
-		Map<String, HashSet<String>> map = new HashMap<>();
-		for (Comment comment : comments) {
-			List<Answer> answers = answerService.queryAnswerByAnswerID(comment.getPostId());
-			if (answers != null) {
-				for (Answer answer : answers) {
-					if (map.containsKey(String.valueOf(answer.getQuestionId()))) {
-						map.get(String.valueOf(answer.getQuestionId())).add(String.valueOf(comment.getAccountId()));
-					} else {
-						HashSet<String> set = new HashSet<>();
-						set.add(String.valueOf(comment.getAccountId()));
-						map.put(String.valueOf(answer.getQuestionId()), set);
-					}
-				}
+		List<Comment> comments = commentService.commentByDate(from, end);
+		Map<Integer, HashSet<Integer>> map = new HashMap<>();
+		comments.forEach(comment -> {
+			List<Answer> answers = answerService.answerByAnswerId(comment.getPostId());
+			if (answers != null || !answers.isEmpty()) {
+				answers.forEach(answer -> {
+					map.merge(answer.getQuestionId(), new HashSet<>(Collections.singletonList(answer.getAccountId())), (oldValue, newValue) -> {
+						oldValue.addAll(newValue);
+						return oldValue;
+					});
+				});
 			} else {
-				if (map.containsKey(String.valueOf(comment.getPostId()))) {
-					map.get(String.valueOf(comment.getPostId())).add(String.valueOf(comment.getAccountId()));
-				} else {
-					HashSet<String> set = new HashSet<>();
-					set.add(String.valueOf(comment.getAccountId()));
-					map.put(String.valueOf(comment.getPostId()), set);
-				}
+				map.merge(comment.getPostId(), new HashSet<>(Collections.singletonList(comment.getAccountId())), (oldValue, newValue) -> {
+					oldValue.addAll(newValue);
+					return oldValue;
+				});
 			}
-		}
+		});
 		Map<Integer, Integer> result = new HashMap<>();
-		for (String key : map.keySet()) {
-			if (result.containsKey(map.get(key).size())) {
-				result.put(map.get(key).size(), result.get(map.get(key).size()) + 1);
-			} else {
-				result.put(map.get(key).size(), 1);
-			}
-		}
-		return result;
+		map.forEach((key, value) -> result.merge(value.size(), 1, Integer::sum));
+		List<int[]> resultList = new ArrayList<>();
+		result.forEach((key, value) -> resultList.add(new int[]{key, value}));
+		return resultList;
 	}
+	
 	@GetMapping("/participation-distribution")
-	public Map<Integer, Integer> getParticipationDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<int[]> getParticipationDistribution(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 															@RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-		List<Answer> answers = answerService.queryAnswerByDate(from, end);
-		Map<String, HashSet<String>> map = new HashMap<>();
-		for (Answer answer : answers) {
-			if (map.containsKey(String.valueOf(answer.getQuestionId()))) {
-				map.get(String.valueOf(answer.getQuestionId())).add(String.valueOf(answer.getAccountId()));
+		List<Answer> answers = answerService.answerByDate(from, end);
+		Map<Integer, HashSet<Integer>> map = new HashMap<>();
+		answers.forEach(answer -> {
+			map.merge(answer.getQuestionId(), new HashSet<>(Collections.singletonList(answer.getAccountId())), (oldValue, newValue) -> {
+				oldValue.addAll(newValue);
+				return oldValue;
+			});
+		});
+		List<Comment> comments = commentService.commentByDate(from, end);
+		comments.forEach(comment -> {
+			List<Answer> answers2 = answerService.answerByAnswerId(comment.getPostId());
+			if (answers2 != null || !answers2.isEmpty()) {
+				answers2.forEach(answer -> {
+					map.merge(answer.getQuestionId(), new HashSet<>(Collections.singletonList(answer.getAccountId())), (oldValue, newValue) -> {
+						oldValue.addAll(newValue);
+						return oldValue;
+					});
+				});
 			} else {
-				HashSet<String> set = new HashSet<>();
-				set.add(String.valueOf(answer.getAccountId()));
-				map.put(String.valueOf(answer.getQuestionId()), set);
+				map.merge(comment.getPostId(), new HashSet<>(Collections.singletonList(comment.getAccountId())), (oldValue, newValue) -> {
+					oldValue.addAll(newValue);
+					return oldValue;
+				});
 			}
-		}
-		List<Comment> comments = commentService.queryCommentByDate(from, end);
-		for (Comment comment : comments) {
-			answers = answerService.queryAnswerByAnswerID(comment.getPostId());
-			if (answers != null) {
-				for (Answer answer : answers) {
-					if (map.containsKey(String.valueOf(answer.getQuestionId()))) {
-						map.get(String.valueOf(answer.getQuestionId())).add(String.valueOf(comment.getAccountId()));
-					} else {
-						HashSet<String> set = new HashSet<>();
-						set.add(String.valueOf(comment.getAccountId()));
-						map.put(String.valueOf(answer.getQuestionId()), set);
-					}
-				}
-			} else {
-				if (map.containsKey(String.valueOf(comment.getPostId()))) {
-					map.get(String.valueOf(comment.getPostId())).add(String.valueOf(comment.getAccountId()));
-				} else {
-					HashSet<String> set = new HashSet<>();
-					set.add(String.valueOf(comment.getAccountId()));
-					map.put(String.valueOf(comment.getPostId()), set);
-				}
-			}
-		}
+		});
 		Map<Integer, Integer> result = new HashMap<>();
-		for (String key : map.keySet()) {
-			if (result.containsKey(map.get(key).size())) {
-				result.put(map.get(key).size(), result.get(map.get(key).size()) + 1);
-			} else {
-				result.put(map.get(key).size(), 1);
-			}
-		}
-		return result;
+		map.forEach((key, value) -> result.merge(value.size(), 1, Integer::sum));
+		List<int[]> resultList = new ArrayList<>();
+		result.forEach((key, value) -> resultList.add(new int[]{key, value}));
+		return resultList;
 	}
 	@GetMapping("/activity")
-	public Map<Integer, Integer> getUserActivity(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
+	public List<Map<String, Object>> getUserActivity(@RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
 												 @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
 		Map<Integer, Integer> map = new HashMap<>();
-		List<Question> questions = questionService.allQuery(from, end);
-		for (Question question: questions) {
-			if (map.containsKey(question.getAccountId())) {
-				map.put(question.getAccountId(), map.get(question.getAccountId()) + 1);
-			} else {
-				map.put(question.getAccountId(), 1);
-			}
-		}
-		List<Answer> answers = answerService.queryAnswerByDate(from, end);
-		for (Answer answer: answers) {
-			if (map.containsKey(answer.getAccountId())) {
-				map.put(answer.getAccountId(), map.get(answer.getAccountId()) + 1);
-			} else {
-				map.put(answer.getAccountId(), 1);
-			}
-		}
-		List<Comment> comments = commentService.queryCommentByDate(from, end);
-		for (Comment comment: comments) {
-			if (map.containsKey(comment.getAccountId())) {
-				map.put(comment.getAccountId(), map.get(comment.getAccountId()) + 1);
-			} else {
-				map.put(comment.getAccountId(), 1);
-			}
-		}
-		return map;
+		List<Question> questions = questionService.totalQuestion(from, end);
+		questions.forEach(question -> {
+			map.merge(question.getAccountId(), 1, Integer::sum);
+		});
+		List<Answer> answers = answerService.answerByDate(from, end);
+		answers.forEach(answer -> {
+			map.merge(answer.getAccountId(), 1, Integer::sum);
+		});
+		List<Comment> comments = commentService.commentByDate(from, end);
+		comments.forEach(comment -> {
+			map.merge(comment.getAccountId(), 1, Integer::sum);
+		});
+		List<Map<String, Object>> resultList = new ArrayList<>();
+		map.entrySet().stream().sorted(Map.Entry.<Integer, Integer>comparingByValue().reversed()).forEach(e -> {
+			Map<String, Object> result = new HashMap<>();
+			result.put("user", userService.userById(e.getKey()));
+			result.put("activity", e.getValue());
+			resultList.add(result);
+		});
+		return resultList;
 	}
 }

@@ -51,6 +51,7 @@
   import IntroductionComponent from "@/components/IntroductionComponent.vue";
   import ContentComponent from "@/components/ContentComponent.vue";
 
+
   export default {
     name: 'App',
     components: {ContentComponent, IntroductionComponent, HeaderComponent},
