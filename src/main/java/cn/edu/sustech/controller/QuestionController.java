@@ -130,20 +130,17 @@ public class QuestionController {
   public List<long[]> resolutionDistributionQuery(
       @RequestParam("from") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date from,
       @RequestParam("end") @DateTimeFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss") Date end) {
-    List<Question> withAcceptedAnswer = questionService.withAnswer(from, end);
+    List<Answer> acceptedAnswers = answerService.acceptedAnswer(from, end);
     Map<Long, Integer> distribution = new HashMap<>();
-    withAcceptedAnswer.stream()
+    acceptedAnswers.stream()
         .forEach(
-            question -> {
-              List<Answer> answers =
-                  answerService.acceptedAnswerByQuestionId(question.getQuestionId());
-              if (!answers.isEmpty()) {
+            answer -> {
+                Question question = questionService.questionById(answer.getQuestionId());
                 distribution.merge(
-                    answers.get(0).getCreationDate().getTime()
+                    answer.getCreationDate().getTime()
                         - question.getCreationDate().getTime(),
                     1,
                     Integer::sum);
-              }
             });
     List<long[]> result = new ArrayList<>();
     distribution.entrySet().stream()

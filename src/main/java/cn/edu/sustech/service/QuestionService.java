@@ -34,4 +34,8 @@ public class QuestionService {
     wrapper.ge("creation_date", from).le("creation_date", end).gt("answer_count", 0);
     return mapper.selectList(wrapper);
   }
+
+  public Question questionById(int questionID) {
+    return mapper.selectById(questionID);
+  }
 }

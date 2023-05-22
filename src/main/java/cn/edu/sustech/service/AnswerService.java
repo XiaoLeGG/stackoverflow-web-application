@@ -40,4 +40,11 @@ public class AnswerService {
     wrapper.eq("answer_id", answerID);
     return mapper.selectList(wrapper);
   }
+  
+  public List<Answer> acceptedAnswer(Date from, Date end) {
+    QueryWrapper<Answer> wrapper = new QueryWrapper<Answer>();
+    wrapper.between("creation_date", from, end).eq("is_accepted", true);
+    return mapper.selectList(wrapper);
+  }
+  
 }
