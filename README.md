@@ -19,7 +19,7 @@
 
 ![image-20230522150131283](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230522150131283.png)
 
-本网络应用项目对**Stack Overflow**网站进行相关数据抽样统计，并进行数据可视化。项目主要采用 **SpringBoot**、**Mybatis** 作为后端框架，**Vue** 作为前端框架，使用**Postgre** 数据库作为数据存储媒介。
+本网络应用项目对**Stack Overflow**网站进行相关数据抽样统计，并进行数据可视化。项目主要采用 **Spring Boot**、**Mybatis Plus** 作为后端框架，**Vue 3.0** 作为前端框架，使用**PostgreSQL** 数据库作为数据存储媒介。
 
 用户可通过网络应用，查看相应的可视化数据图，直观地了解相应日期之间的**Stack Overflow**网站数据统计；用户也可以通过项目提供的 REST 服务，通过相应 API 获取处理后的数据。
 
@@ -69,7 +69,7 @@ GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
 
 ### 总体架构
 
-本项目主要使用 Apache Maven 进行项目管理和自动构建，分为前端和后端两部分。前端框架采用 Vue 和 Javascrip，后端框架采用 SpringBoot 和 Mybatis，使用 Postgre 数据库存储爬取数据。
+本项目主要使用 Apache Maven 进行项目管理和自动构建，分为前端和后端两部分。前端框架采用 Vue 3.0，后端框架采用 SpringBoot 和 Mybatis-Plus，使用 Java 爬取数据到 PostgreSQL 数据库。
 
 <img src="https://raw.githubusercontent.com/Maystern/picbed/main/image-20230522192918486.png" alt="image-20230522192918486" style="zoom:50%;" />
 
@@ -118,19 +118,19 @@ GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
                     └─sustech
 ```
 
-`controller` 包中存储形如 `XXXController.java` 若干与相应实体（问题、答案、评论、用户等）的控制方法，既能提供相关的 REST 服务，通过相应 API 提供处理后的数据；又能为前端可视化提供所需要的数据。
+`controller` 包中存储形如 `XXXController.java` 若干与相应实体（问题、答案、评论、用户等）的控制方法，既能提供相关的 REST 服务，即通过相应 API 提供处理后的数据；又能为前端可视化提供所需要的数据。
 
 `crawler` 包中存储有 `CrawlerMain.java` 是主方法，运行后将刷新数据库中的数据，使用到同一包下的工具类`DatabaseService.java`（提供数据库的服务）、`DataCollector.java`（提供爬虫的服务）、`StandfordCoreNLPService.java`（提供 NLP分词服务）。
 
-`entity` 包中是数据表中各表的实体，在 `Mybatis` 框架中使用到。
+`entity` 包中是数据表中各表的实体，在 `Mybatis-Plus` 框架中使用到。
 
-`mapper` 包中是数据表中各表的映射，在 `Mybatis` 框架中使用到。
+`mapper` 包中是数据表中各表的映射，在 `Mybatis-Plus` 框架中使用到。
 
 `service` 包中是使用 `Mybatis` 在各表中进行数据查询的服务类。
 
 ### 数据库架构
 
-本项目采用 Postgre 数据库存储数据。PostgreSQL是一个功能强大的关系型数据库管理系统（RDBMS），它的设计目标是提供可靠性、可扩展性和数据完整性。
+本项目采用 PostgreSQL 数据库存储数据。PostgreSQL是一个功能强大的关系型数据库管理系统（RDBMS），它的设计目标是提供可靠性、可扩展性和数据完整性。
 
 - 可靠性：PostgreSQL是一个可靠的数据库系统，具有良好的数据完整性和持久性。它支持事务处理，可以确保在数据库操作过程中的错误或故障时数据的一致性和可靠性。
 - 可扩展性：PostgreSQL具有良好的可扩展性，可以处理大量数据和高并发访问。它支持水平扩展和垂直扩展，可以通过添加更多的服务器节点或增加硬件资源来提高数据库的性能和容量。
