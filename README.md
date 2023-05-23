@@ -8,8 +8,8 @@
 
 ------
 
-- 前端：伦天乐（学号：12113019）贡献比：50%
-- 后端：罗嘉诚（学号：12112910）贡献比：50%
+- 伦天乐（学号：12113019）贡献比：50%
+- 罗嘉诚（学号：12112910）贡献比：50%
 
 ## 项目简介与部署
 
@@ -91,7 +91,23 @@ GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
             └─parameters
 ```
 
-//TODO
+前端主要使用了**Vue 3.0**、**Vite**、**Element-UI**和**Vue-echarts**包来设计前端，**axios**、**dayjs**和**sass**等依赖包用于获取和处理数据以及处理样式。同时，我们采用npm来处理依赖和包管理。
+
+`frontend`包下，`index.html`为网页的主体html，`vite.config.js`配置`Vue`相关参数，如服务器代理，`package.json`包含了本次项目相关配置信息。
+
+`src`包下主要是`Vue`构建的基本内容，其中`App.vue`是主体组件，`main.js`负责创建和导入包括`css`样式文件在内的全局的一些控件。
+
+`assets`包下包含了一些`css`样式文件和`icon`等用到的图像文件。
+
+`components`包下主要是`Vue`的其它子组件，其中包含了整体网页的顶部选项卡（`HeaderComponent`.vue），项目介绍组件（`IntroductionComponent.vue`）和数据内容展示组件（`ContentComponent.vue`），还有一个`StatisticsContainer.vue`作为数据展示容器模板。
+
+`charts`包下主要为实现各类图表的基本组件，是根据本项目定制后设计的组件，方便后续使用。
+
+`data-containers`主要包含了各类需要查询的数据图表容器组件。
+
+`parameters`为各类数据查询需要的参数的输入组件。
+
+另外，前端的数据采集主要使用的是后端的REST Api，前后端可以说是完全分离的。
 
 ### 后端架构
 
@@ -117,6 +133,8 @@ GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
                 └─edu
                     └─sustech
 ```
+
+后端主要使用了**Spring**和**Mybatis-Plus**来提供Web服务。
 
 `controller` 包中存储形如 `XXXController.java` 若干与相应实体（问题、答案、评论、用户等）的控制方法，既能提供相关的 REST 服务，即通过相应 API 提供处理后的数据；又能为前端可视化提供所需要的数据。
 
@@ -354,11 +372,11 @@ public class StanfordCoreNLPService {
 
 **请求参数**
 
-| 字段 | 类型 | 描述                                            |
-| ---- | ---- | ----------------------------------------------- |
-| from | Date | 查询数据起始时间（采用yyyy-mm-ddThh:mm:ss格式） |
-| end  | Date | 查询数据结束时间（采用yyyy-mm-ddThh:mm:ss格式） |
-| size | Int  | 查询标签组中标签的个数                          |
+| 字段 | 类型   | 描述                                            |
+| ---- | ------ | ----------------------------------------------- |
+| from | 日期型 | 查询数据起始时间（采用yyyy-MM-ddTHH:mm:ss格式） |
+| end  | 日期型 | 查询数据结束时间（采用yyyy-MM-ddTHH:mm:ss格式） |
+| size | 整数型 | 查询标签组中标签的个数                          |
 
 ### Number of Answers
 
@@ -368,7 +386,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：double，没有答案问题的百分比。
+**响应参数**：浮点数，没有答案问题的百分比。
 
 **示例**：http://localhost:8080/api/question/no-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -380,7 +398,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：double，问题回答数量的平均值。
+**响应参数**：浮点数，问题回答数量的平均值。
 
 **示例**：http://localhost:8080/api/question/answer/average?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -392,7 +410,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：Int，问题答案数量的最大值。
+**响应参数**：整数，问题答案数量的最大值。
 
 **示例**：http://localhost:8080/api/question/answer/max?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -404,7 +422,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：二元组集合，表示的是每一个特定回答数量的问题数量。如[1, 371]表示的是回答数只有1个问题数有371个。
 
 **示例**：http://localhost:8080/api/question/answer/distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -418,7 +436,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：double，有被接受答案的问题（占问题总数）的百分比。
+**响应参数**：浮点数，有被接受答案的问题（占问题总数）的百分比。
 
 **示例**：http://localhost:8080/api/question/with-accepted-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -430,7 +448,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：二元组集合，表示的是每一个解决时间间隔的问题数量，时间间隔单位为毫秒。如[1289000, 1]表示的是花了1289000毫秒才得到解决的问题数有一个。
 
 **示例**：http://localhost:8080/api/question/with-accepted-answer/resolution-distribution?from=2021-12-28T00:00:00&end=2023-02-01T00:00:00。
 
@@ -442,49 +460,11 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：double，没有答案问题的百分比。
+**响应参数**：浮点数，没有答案问题的百分比。
 
 **示例**：http://localhost:8080/api/question/with-accepted-answer/better-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
 ![image-20230523160844766](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160844766.png)
-
-### Tags
-
-#### 一定规模的tag组出现的次数
-
-`GET /api/tag/group-tag/count` 
-
-**请求参数**：from（必填）、end（必填）、size（必填）。
-
-**响应参数**：//TODO
-
-**示例**：http://localhost:8080/api/tag/group-tag/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
-
-![image-20230523161253226](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161253226.png)
-
-#### 一定规模的tag组的点赞数
-
-`GET /api/tag/group-tag/upvote` 
-
-**请求参数**：from（必填）、end（必填）、size（必填）。
-
-**响应参数**：//TODO
-
-**示例**：http://localhost:8080/api/tag/group-tag/upvote?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
-
-![image-20230523161501871](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161501871.png)
-
-#### 一定规模的tag组的浏览量
-
-`GET /api/tag/group-tag/view` 
-
-**请求参数**：from（必填）、end（必填）、size（必填）。
-
-**响应参数**：//TODO
-
-**示例**：http://localhost:8080/api/tag/group-tag/view?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
-
-![image-20230523161535025](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161535025.png)
 
 #### 单 tag 出现的次数
 
@@ -492,7 +472,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：Json格式数据，`tag`是tag的名称，`count`是这个tag的出现次数。
 
 **示例**：http://localhost:8080/api/tag/single-tag/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -504,7 +484,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：Json格式数据，`tag`是tag的名称，`count`是这个tag的点赞数。
 
 **示例**：http://localhost:8080/api/tag/single-tag/upvote?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -516,11 +496,49 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：Json格式数据，`tag`是tag的名称，`count`是这个tag的浏览量。
 
 **示例**：http://localhost:8080/api/tag/single-tag/view?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
 
 ![image-20230523212616984](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523212616984.png)
+
+### Tags
+
+#### 一定规模的tag组出现的次数
+
+`GET /api/tag/group-tag/count` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：Json格式数据，`tags`是tag组的所有tag字典序排序后通过逗号分割拼起来的字符串，`count`是这个tag组的出现次数。
+
+**示例**：http://localhost:8080/api/tag/group-tag/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161253226](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161253226.png)
+
+#### 一定规模的tag组的点赞数
+
+`GET /api/tag/group-tag/upvote` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：Json格式数据，`tags`是tag组的所有tag字典序排序后通过逗号分割拼起来的字符串，`count`是这个tag组的点赞数。
+
+**示例**：http://localhost:8080/api/tag/group-tag/upvote?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161501871](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161501871.png)
+
+#### 一定规模的tag组的浏览量
+
+`GET /api/tag/group-tag/view` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：Json格式数据，`tags`是tag组的所有tag字典序排序后通过逗号分割拼起来的字符串，`count`是这个tag组的浏览量。
+
+**示例**：http://localhost:8080/api/tag/group-tag/view?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161535025](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161535025.png)
 
 ### Users
 
@@ -530,7 +548,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：二元组集合，表示的是每一个特定用户参与数的问题数量。如[1, 32]表示的是仅有一个用户参与的问题数量有32个。值得注意的是，这里不统计没有其它用户参与的问题。
 
 **示例**：http://localhost:8080/api/user/participation-distribution?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -542,7 +560,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：二元组集合，表示的是每一个特定回答者参与数的问题数量。如[1, 54]表示的是仅有一个回答者的问题数量有54个。值得注意的是，这里不统计没有回答的问题。
 
 **示例**：http://localhost:8080/api/user/post-answer-distribution?from=2022-12-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -554,7 +572,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：二元组集合，表示的是每一个特定评论者参与数的问题数量。如[1, 394]表示的是仅有一个评论者的问题数量有394个。值得注意的是，这里不统计没有评论的问题。
 
 **示例**：http://localhost:8080/api/user/post-comment-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
 
@@ -566,7 +584,7 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：Json格式数据，`activity`是用户的参与活跃数，`user`下是用户在`Stack Overflow`上的相关数据，包括头像、`accountId`、`userId`等数据信息。
 
 **示例**：http://localhost:8080/api/user/activity?from=2023-01-31T00:00:00&end=2023-02-01T00:00:00。
 
@@ -580,9 +598,8 @@ public class StanfordCoreNLPService {
 
 **请求参数**：from（必填）、end（必填）。
 
-**响应参数**：//TODO
+**响应参数**：Json格式数据，`api`是Java API的完整路径，`count`是统计出现的次数。
 
 **示例**：http://localhost:8080/api/api/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
 
 ![image-20230523162436996](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523162436996.png)
-
