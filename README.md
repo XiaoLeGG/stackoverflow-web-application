@@ -25,7 +25,7 @@
 
 GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
 
-![image-20230522151853896](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230522151853896.png)
+<img src="https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523163720719.png" alt="image-20230523163720719" style="zoom:50%;" />
 
 ### 项目本地部署
 
@@ -91,7 +91,7 @@ GitHub开源链接：https://github.com/XiaoLeGG/stackoverflow-web-application
             └─parameters
 ```
 
-
+//TODO
 
 ### 后端架构
 
@@ -218,7 +218,7 @@ public class StanfordCoreNLPService {
 
 ### 数据情况
 
-截止2023年05月22晚 23:10:09 最后一次以 pageSize = 100 和 pageStep = 100 进行数据收集（即完成StackOverflow中 1% 问答的收集）。
+截止2023年05月22日晚23:10:09，最后一次以 pageSize = 100 和 pageStep = 100 进行数据爬取（即完成StackOverflow中 1% 问答数据的收集）。
 
 ![image-20230523013758090](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523013758090.png)
 
@@ -348,33 +348,241 @@ public class StanfordCoreNLPService {
 
 <img src="https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523024117285.png" alt="image-20230523024117285" style="zoom:50%;" />
 
-## RESTful API 终端
+## RESTful API 接口文档
 
-上述用于绘制可视化图表的数据，都可以通过 Web 服务器使用 `GET` 获取：
+为了满足开发者使用本项目提供的 RESTful API，下面是本项目提供相关接口。
 
-1. Number of Answers
-   1.1 没有答案问题的百分比：http://localhost:8080/api/question/no-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   1.2.1 查询一段时间内question的answer数量的平均值：http://localhost:8080/api/question/answer/average?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   1.2.2 查询一段时间内question的answer数量的最大值：http://localhost:8080/api/question/answer/max?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   1.3 查询一段时间内的question的answer数量的分布情况：http://localhost:8080/api/question/answer/distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-2. Accepted Answers
-   2.1 查询一段时间内有accepted answer问题（占问题总数）的百分比：http://localhost:8080/api/question/with-accepted-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   2.2 查询一段时间内问题从提出到解决的时间间隔分布（只针对所有有accepted answer的问题）：http://localhost:8080/api/question/with-accepted-answer/resolution-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   2.3 查询一段时间内含有non-accepted answer的upvote数高于 accepted answer问题（占问题总数）的百分比（只针对所有有accepted answer的问题）：http://localhost:8080/api/question/with-accepted-answer/better-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
+**请求参数**
 
-3. Tags
-   3.1.1 查询一段时间内单tag出现的次数：http://localhost:8080/api/tag/single-tag/count?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   3.1.2 查询一段时间内tag组（组中tag个数为size）出现的次数：http://localhost:8080/api/tag/group-tag/count?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00&size=2
-   3.2.1 查询一段时间内单tag的upvotes数目：http://localhost:8080/api/tag/single-tag/upvote?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   3.2.2 查询一段时间内tag组（组中tag个数为size）的upvotes数目：http://localhost:8080/api/tag/group-tag/upvote?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00&size=2
-   3.3.1 查询一段时间内单tag的view数目：http://localhost:8080/api/tag/single-tag/view?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   3.3.2 查询一段时间内tag组（组中tag个数为size）的view数目：http://localhost:8080/api/tag/group-tag/view?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00&size=2
+| 字段 | 类型 | 描述                                            |
+| ---- | ---- | ----------------------------------------------- |
+| from | Date | 查询数据起始时间（采用yyyy-mm-ddThh:mm:ss格式） |
+| end  | Date | 查询数据结束时间（采用yyyy-mm-ddThh:mm:ss格式） |
+| size | Int  | 查询标签组中标签的个数                          |
 
-4. Users
-   4.1 查询一段时间内问题讨论设计到的用户数量的分布情况：http://localhost:8080/api/user/participation-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
+### Number of Answers
 
-   4.2.1 查询一段时间内问题讨论涉及到的回答者数量的分布情况：http://localhost:8080/api/user/post-answer-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   4.2.2 查询一段时间内问题讨论涉及到的评论者数量的分布情况：http://localhost:8080/api/user/post-comment-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
-   4.3 查询一段时间内参与问题讨论的用户的活跃值：http://localhost:8080/api/user/activity?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
+#### 没有答案问题的百分比
 
-5. 查询一段时间内Java API在问题、答案、评论中出现的次数：http://localhost:8080/api/api/count?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00
+`GET /api/question/no-answer/percentage` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：double，没有答案问题的百分比。
+
+**示例**：http://localhost:8080/api/question/no-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523155940377](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523155940377.png)
+
+#### 问题回答数量的平均值
+
+`GET /api/question/answer/average` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：double，问题回答数量的平均值。
+
+**示例**：http://localhost:8080/api/question/answer/average?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523155958024](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523155958024.png)
+
+#### 问题答案数量的最大值
+
+`GET /api/question/answer/max` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：Int，问题答案数量的最大值。
+
+**示例**：http://localhost:8080/api/question/answer/max?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523160035746](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160035746.png)
+
+#### 问题回答数量分布
+
+`GET /api/question/answer/distribution` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/question/answer/distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523160244172](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160244172.png)
+
+### Accepted Answers
+
+#### 有被接受答案的问题（占问题总数）的百分比
+
+`GET /api/question/with-accepted-answer/percentage` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：double，有被接受答案的问题（占问题总数）的百分比。
+
+**示例**：http://localhost:8080/api/question/with-accepted-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523160504481](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160504481.png)
+
+#### 问题从提出到解决的时间间隔分布
+
+`GET /api/question/with-accepted-answer/resolution-distribution` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/question/with-accepted-answer/resolution-distribution?from=2021-12-28T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523160713501](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160713501.png)
+
+#### 含有非接受答案的点赞数高于被接受答案问题的百分比
+
+`GET /api/question/with-accepted-answer/better-answer/percentage` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：double，没有答案问题的百分比。
+
+**示例**：http://localhost:8080/api/question/with-accepted-answer/better-answer/percentage?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523160844766](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523160844766.png)
+
+### Tags
+
+#### 一定规模的tag组出现的次数
+
+`GET /api/tag/group-tag/count` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/group-tag/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161253226](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161253226.png)
+
+#### 一定规模的tag组的点赞数
+
+`GET /api/tag/group-tag/upvote` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/group-tag/upvote?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161501871](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161501871.png)
+
+#### 一定规模的tag组的浏览量
+
+`GET /api/tag/group-tag/view` 
+
+**请求参数**：from（必填）、end（必填）、size（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/group-tag/view?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00&size=2。
+
+![image-20230523161535025](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161535025.png)
+
+#### 单 tag 出现的次数
+
+`GET /api/tag/single-tag/count` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/single-tag/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523212307813](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523212307813.png)
+
+#### 单 tag 的点赞数
+
+`GET /api/tag/single-tag/upvote` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/single-tag/upvote?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523212516363](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523212516363.png)
+
+#### 单 tag 的浏览量
+
+`GET /api/tag/single-tag/view` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/tag/single-tag/view?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523212616984](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523212616984.png)
+
+### Users
+
+#### 问题讨论涉及到的用户数量分布
+
+`GET /api/user/participation-distribution` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/user/participation-distribution?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523161921799](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523161921799.png)
+
+#### 问题讨论涉及到的回答者数量的分布
+
+`GET /api/user/post-answer-distribution` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/user/post-answer-distribution?from=2022-12-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523162022117](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523162022117.png)
+
+#### 问题讨论涉及到的评论者数量的分布
+
+`GET api/user/post-comment-distribution` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/user/post-comment-distribution?from=2022-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523162136467](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523162136467.png)
+
+#### 参与问题讨论的用户的活跃值
+
+`GET /api/user/activity` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/user/activity?from=2023-01-31T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523162339274](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523162339274.png)
+
+### Java API
+
+#### 查询不同的Java API出现次数
+
+`GET /api/api/count` 
+
+**请求参数**：from（必填）、end（必填）。
+
+**响应参数**：//TODO
+
+**示例**：http://localhost:8080/api/api/count?from=2023-01-01T00:00:00&end=2023-02-01T00:00:00。
+
+![image-20230523162436996](https://raw.githubusercontent.com/Maystern/picbed/main/image-20230523162436996.png)
+
